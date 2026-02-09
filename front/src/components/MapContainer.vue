@@ -20,13 +20,17 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['map-click', 'marker-click', 'map-ready', 'location-ready', 'info-window-action'])
+const emit = defineEmits(['map-click', 'marker-click', 'map-ready', 'location-ready', 'info-window-action', 'navigation-ready'])
 
 const mapContainer = ref(null)
 let map = null
 // 使用 Map 存储 marker 和 infoWindow，便于管理生命周期
 const markerMap = new Map() // id -> { marker, infoWindow, trashCan }
 let userLocationMarker = null // 用户位置标记
+let userLocation = null // 用户位置坐标 { lng, lat }
+let navigationInstance = null // 导航实例
+let navigationRoute = null // 导航路线
+let globalClickHandler = null // 全局点击事件处理器
 
 // 等待 AMap 加载完成
 const waitForAMap = () => {
@@ -107,7 +111,8 @@ const initMap = async () => {
         timeout: 10000,
         buttonOffset: new AMap.Pixel(10, 20),
         zoomToAccuracy: true,
-        buttonPosition: 'RB'
+        buttonPosition: 'RB',
+        showMarker: false // 禁用默认的蓝色三角标记，只使用自定义的蓝色圆点
       })
 
       map.addControl(geolocation)
@@ -176,6 +181,9 @@ const locateUser = (lng, lat) => {
   })
 
   map.add(userLocationMarker)
+
+  // 保存用户位置
+  userLocation = { lng, lat }
 
   // 设置地图中心并调整缩放级别
   map.setCenter([lng, lat])
@@ -260,13 +268,14 @@ const addMarker = (trashCan) => {
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768
   
   const actionId = `action_${id}_${Date.now()}`
+  const infoWindowId = `infowindow_${id}`
   const buttonPadding = isMobile ? '12px 16px' : '6px 12px'
   const buttonFontSize = isMobile ? '16px' : '14px'
   const minWidth = isMobile ? '280px' : '200px'
   const maxImageWidth = isMobile ? '100%' : '300px'
   
   let content = `
-    <div style="padding: ${isMobile ? '15px' : '10px'}; min-width: ${minWidth}; max-width: ${isMobile ? '90vw' : '350px'};">
+    <div id="${infoWindowId}" style="padding: ${isMobile ? '15px' : '10px'}; min-width: ${minWidth}; max-width: ${isMobile ? '90vw' : '350px'};">
       <h3 style="margin: 0 0 ${isMobile ? '12px' : '10px'} 0; font-size: ${isMobile ? '18px' : '16px'}; color: #2C2416; font-weight: 600;">垃圾桶位置</h3>
       ${safeAddress ? `<p style="margin: ${isMobile ? '8px' : '5px'} 0; color: #5C4E3A; font-size: ${isMobile ? '15px' : '14px'}; line-height: 1.5;">${safeAddress}</p>` : ''}
       ${safeDescription ? `<p style="margin: ${isMobile ? '8px' : '5px'} 0; color: #5C4E3A; font-size: ${isMobile ? '15px' : '14px'}; line-height: 1.5;">${safeDescription}</p>` : ''}
@@ -275,7 +284,7 @@ const addMarker = (trashCan) => {
       <div style="margin-top: ${isMobile ? '15px' : '10px'};">
         <button data-action="navigate" data-lng="${longitude}" data-lat="${latitude}" 
                 style="background: #8B6F47; color: white; border: none; padding: ${buttonPadding}; border-radius: 4px; cursor: pointer; transition: all 0.3s; font-size: ${buttonFontSize}; width: 100%; min-height: ${isMobile ? '44px' : 'auto'}; font-weight: 500; -webkit-tap-highlight-color: transparent;">
-          导航到此处
+          🚶 步行路线
         </button>
       </div>
     </div>
@@ -297,35 +306,97 @@ const addMarker = (trashCan) => {
 
     infoWindow.open(map, marker.getPosition())
 
-    // 绑定事件委托处理 InfoWindow 内的操作
+    // 使用全局事件委托处理 InfoWindow 内的操作（更可靠的方法）
+    // 延迟绑定以确保 DOM 已渲染
     setTimeout(() => {
-      const infoWindowEl = infoWindow.getContent()
-      if (infoWindowEl) {
-        const handleClick = (e) => {
-          const target = e.target
-          const action = target.getAttribute('data-action')
-
-          if (action === 'navigate') {
-            const lng = parseFloat(target.getAttribute('data-lng'))
-            const lat = parseFloat(target.getAttribute('data-lat'))
-            handleInfoWindowAction('navigate', {lng, lat})
-          } else if (action === 'open-image') {
-            const imageUrl = target.getAttribute('data-image-url')
-            handleInfoWindowAction('open-image', {imageUrl})
+      // 查找 InfoWindow 内的按钮元素
+      const findButton = () => {
+        // 方法1: 通过 ID 查找容器
+        let containerEl = document.getElementById(infoWindowId)
+        
+        // 方法2: 通过 data-action 和坐标查找按钮
+        if (!containerEl) {
+          const buttons = document.querySelectorAll(`[data-action="navigate"][data-lng="${longitude}"][data-lat="${latitude}"]`)
+          if (buttons.length > 0) {
+            containerEl = buttons[0].closest('div') || buttons[0].parentElement
           }
         }
-
-        // 移除旧的事件监听器（如果有）
-        const oldHandler = infoWindowEl._clickHandler
-        if (oldHandler) {
-          infoWindowEl.removeEventListener('click', oldHandler)
+        
+        // 方法3: 尝试通过 getContent() 获取
+        if (!containerEl) {
+          const infoWindowContent = infoWindow.getContent()
+          if (infoWindowContent) {
+            if (infoWindowContent.nodeType === 1) {
+              containerEl = infoWindowContent
+            } else if (infoWindowContent.querySelector) {
+              containerEl = infoWindowContent.querySelector(`#${infoWindowId}`) || infoWindowContent
+            }
+          }
         }
-
-        // 添加新的事件监听器
-        infoWindowEl.addEventListener('click', handleClick)
-        infoWindowEl._clickHandler = handleClick
+        
+        return containerEl
       }
-    }, 100)
+
+      const containerEl = findButton()
+
+      if (!containerEl || typeof containerEl.addEventListener !== 'function') {
+        console.warn('InfoWindow 内容元素无效，无法绑定事件，将使用全局事件委托', {
+          containerEl,
+          infoWindowId,
+          longitude,
+          latitude
+        })
+        
+        // 如果找不到容器，使用全局事件委托（作为后备方案）
+        // 注意：这已经在组件级别处理，不需要在这里重复
+        return
+      }
+
+      const handleClick = (e) => {
+        // 使用 closest 查找带有 data-action 的元素（处理按钮内文本节点的情况）
+        const target = e.target.closest ? e.target.closest('[data-action]') : (() => {
+          // Fallback: 向上查找带有 data-action 的元素
+          let el = e.target
+          while (el && el !== containerEl) {
+            if (el.getAttribute && el.getAttribute('data-action')) {
+              return el
+            }
+            el = el.parentElement
+          }
+          return null
+        })()
+
+        if (!target || !target.getAttribute) return
+
+        const action = target.getAttribute('data-action')
+
+        if (action === 'navigate') {
+          e.preventDefault()
+          e.stopPropagation()
+          const lng = parseFloat(target.getAttribute('data-lng'))
+          const lat = parseFloat(target.getAttribute('data-lat'))
+          console.log('步行路线按钮被点击，目标位置:', {lng, lat})
+          handleInfoWindowAction('navigate', {lng, lat})
+        } else if (action === 'open-image') {
+          e.preventDefault()
+          e.stopPropagation()
+          const imageUrl = target.getAttribute('data-image-url')
+          handleInfoWindowAction('open-image', {imageUrl})
+        }
+      }
+
+      // 移除旧的事件监听器（如果有）
+      const oldHandler = containerEl._clickHandler
+      if (oldHandler) {
+        containerEl.removeEventListener('click', oldHandler)
+      }
+
+      // 添加新的事件监听器（使用捕获阶段确保事件被捕获）
+      containerEl.addEventListener('click', handleClick, true)
+      containerEl._clickHandler = handleClick
+      
+      console.log('InfoWindow 事件监听器已绑定', containerEl)
+    }, 200)
 
     emit('marker-click', trashCan)
   })
@@ -379,6 +450,47 @@ watch(() => props.center, (newCenter) => {
 })
 
 onMounted(async () => {
+  // 添加全局事件委托作为后备方案（处理 InfoWindow 内的按钮点击）
+  globalClickHandler = (e) => {
+    // 查找带有 data-action 的元素
+    const target = e.target.closest ? e.target.closest('[data-action]') : (() => {
+      let el = e.target
+      while (el && el !== document.body) {
+        if (el.getAttribute && el.getAttribute('data-action')) {
+          return el
+        }
+        el = el.parentElement
+      }
+      return null
+    })()
+
+    if (!target || !target.getAttribute) return
+
+    const action = target.getAttribute('data-action')
+
+    // 检查是否点击了 InfoWindow 内的按钮（通过检查是否在高德地图的 InfoWindow 容器内）
+    const isInInfoWindow = target.closest ? target.closest('.amap-info-content, .amap-info') : null
+
+    if (isInInfoWindow) {
+      if (action === 'navigate') {
+        e.preventDefault()
+        e.stopPropagation()
+        const lng = parseFloat(target.getAttribute('data-lng'))
+        const lat = parseFloat(target.getAttribute('data-lat'))
+        console.log('步行路线按钮被点击（全局事件委托），目标位置:', {lng, lat})
+        handleInfoWindowAction('navigate', {lng, lat})
+      } else if (action === 'open-image') {
+        e.preventDefault()
+        e.stopPropagation()
+        const imageUrl = target.getAttribute('data-image-url')
+        handleInfoWindowAction('open-image', {imageUrl})
+      }
+    }
+  }
+
+  // 使用捕获阶段确保事件被捕获
+  document.addEventListener('click', globalClickHandler, true)
+
   // 等待DOM渲染完成
   await nextTick()
   // 再等待一小段时间确保容器有尺寸
@@ -388,6 +500,15 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  // 移除全局事件监听器
+  if (globalClickHandler) {
+    document.removeEventListener('click', globalClickHandler, true)
+    globalClickHandler = null
+  }
+
+  // 清理导航路线
+  clearNavigation()
+
   // 清理所有标记
   clearMarkers()
 
@@ -404,12 +525,112 @@ onUnmounted(() => {
   }
 })
 
+// 清除导航路线
+const clearNavigation = () => {
+  if (navigationRoute) {
+    map.remove(navigationRoute)
+    navigationRoute = null
+  }
+  if (navigationInstance) {
+    navigationInstance.clear()
+    navigationInstance = null
+  }
+}
+
+// 导航到指定位置（步行路线规划）
+const navigateTo = async (destination, startPoint = null) => {
+  if (!map || !window.AMap) {
+    console.error('地图未初始化')
+    return
+  }
+
+  // 清除之前的导航路线
+  clearNavigation()
+
+  // 获取起点（用户当前位置或指定起点）
+  let start = startPoint
+  if (!start && userLocation) {
+    start = [userLocation.lng, userLocation.lat]
+  } else if (!start && userLocationMarker) {
+    const position = userLocationMarker.getPosition()
+    start = [position.getLng(), position.getLat()]
+  }
+
+  if (!start) {
+    console.error('无法获取起点位置')
+    return Promise.reject(new Error('请先获取您的位置'))
+  }
+
+  const [startLng, startLat] = Array.isArray(start) ? start : [start.lng || start.longitude, start.lat || start.latitude]
+  const [destLng, destLat] = Array.isArray(destination) ? destination : [destination.lng || destination.longitude, destination.lat || destination.latitude]
+
+  return new Promise((resolve, reject) => {
+    // 使用步行导航插件
+    map.plugin('AMap.Walking', () => {
+      try {
+        if (!window.AMap.Walking) {
+          reject(new Error('步行导航插件加载失败'))
+          return
+        }
+
+        // 创建步行导航实例
+        navigationInstance = new window.AMap.Walking({
+          map: map,
+          hideMarkers: false,
+          autoFitView: true
+        })
+
+        // 搜索路径规划
+        navigationInstance.search(
+          new window.AMap.LngLat(startLng, startLat),
+          new window.AMap.LngLat(destLng, destLat),
+          (status, result) => {
+            if (status === 'complete') {
+              console.log('步行路线规划成功:', result)
+              
+              // 获取路线信息
+              const route = result.routes && result.routes[0]
+              if (route) {
+                const distance = (route.distance / 1000).toFixed(2) // 转换为公里
+                const duration = Math.round(route.time / 60) // 转换为分钟
+                
+                // 触发导航完成事件
+                emit('navigation-ready', {
+                  mode: 'walking',
+                  distance: parseFloat(distance),
+                  duration,
+                  route: result.routes[0]
+                })
+              }
+
+              resolve({
+                mode: 'walking',
+                distance: route ? (route.distance / 1000).toFixed(2) : 0,
+                duration: route ? Math.round(route.time / 60) : 0,
+                route: result.routes[0]
+              })
+            } else {
+              console.error('步行路线规划失败:', result)
+              reject(new Error(result.message || '路线规划失败'))
+            }
+          }
+        )
+      } catch (error) {
+        console.error('步行导航功能初始化失败:', error)
+        reject(error)
+      }
+    })
+  })
+}
+
 // 暴露方法给父组件
 defineExpose({
   addMarker,
   clearMarkers,
   removeMarker,
   locateUser,
+  navigateTo,
+  clearNavigation,
   getMap: () => map
 })
 </script>

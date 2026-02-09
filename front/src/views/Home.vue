@@ -55,7 +55,8 @@
           </div>
         </div>
         
-        <div v-if="trashCans.length > 0" class="results-list">
+        <!-- 桌面端显示搜索结果列表 -->
+        <div v-if="trashCans.length > 0 && !isMobile" class="results-list">
           <h3>搜索结果 ({{ trashCans.length }})</h3>
           <div 
             v-for="item in trashCans" 
@@ -76,6 +77,13 @@
             />
           </div>
         </div>
+        
+        <!-- 手机端显示搜索结果按钮 -->
+        <div v-if="trashCans.length > 0 && isMobile" class="mobile-results-button">
+          <button @click="openResultsModal" class="btn btn-primary">
+            查看搜索结果 ({{ trashCans.length }})
+          </button>
+        </div>
       </div>
     </div>
     
@@ -89,7 +97,64 @@
         @location-ready="onLocationReady"
         @map-click="onMapClick"
         @info-window-action="onInfoWindowAction"
+        @navigation-ready="onNavigationReady"
       />
+      
+      <!-- 导航信息面板 -->
+      <div v-if="navigationInfo" class="navigation-panel">
+        <div class="navigation-header">
+          <h4>步行路线</h4>
+          <button @click="closeNavigation" class="close-nav-btn" aria-label="关闭导航">×</button>
+        </div>
+        <div class="navigation-content">
+          <div class="nav-info-item">
+            <span class="nav-label">距离:</span>
+            <span class="nav-value">{{ navigationInfo.distance }} 公里</span>
+          </div>
+          <div class="nav-info-item">
+            <span class="nav-label">预计时间:</span>
+            <span class="nav-value">{{ navigationInfo.duration }} 分钟</span>
+          </div>
+          <div class="nav-actions">
+            <button @click="openExternalNavigation" class="btn btn-primary btn-sm">
+              打开高德地图导航
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 手机端搜索结果弹框 -->
+    <div v-if="isMobile" class="mobile-results-modal" :class="{ open: resultsModalOpen }">
+      <div class="modal-overlay" @click="closeResultsModal"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>搜索结果 ({{ trashCans.length }})</h3>
+          <button class="modal-close-btn" @click="closeResultsModal" aria-label="关闭">
+            <span>×</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div 
+            v-for="item in trashCans" 
+            :key="item.id" 
+            class="result-item"
+            @click="focusMarkerAndClose(item)"
+          >
+            <div class="result-content">
+              <h4>{{ item.address || '垃圾桶位置' }}</h4>
+              <p v-if="item.description">{{ item.description }}</p>
+              <p class="distance">距离: {{ item.distance?.toFixed(2) || '未知' }} 公里</p>
+            </div>
+            <img 
+              v-if="item.image_url" 
+              :src="item.image_url" 
+              alt="垃圾桶图片"
+              class="result-image"
+            />
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -107,6 +172,10 @@ const loading = ref(false)
 const searchRadius = ref(5)
 const searchLimit = ref(10)
 const sidebarOpen = ref(false)
+const resultsModalOpen = ref(false)
+const isMobile = ref(false)
+const navigationInfo = ref(null)
+const navigationDestination = ref(null)
 
 const toggleSidebar = () => {
   sidebarOpen.value = !sidebarOpen.value
@@ -116,17 +185,41 @@ const closeSidebar = () => {
   sidebarOpen.value = false
 }
 
+// 检测是否为移动端
+const checkMobile = () => {
+  isMobile.value = window.innerWidth <= 768
+}
+
 // 监听窗口大小变化
 const handleResize = () => {
+  checkMobile()
   if (window.innerWidth > 768) {
     sidebarOpen.value = false
+    resultsModalOpen.value = false // 桌面端关闭弹框
   } else {
     // 移动端时，操作面板始终显示（通过CSS控制），不需要侧边栏切换
     sidebarOpen.value = true
   }
 }
 
+// 打开搜索结果弹框
+const openResultsModal = () => {
+  resultsModalOpen.value = true
+}
+
+// 关闭搜索结果弹框
+const closeResultsModal = () => {
+  resultsModalOpen.value = false
+}
+
+// 聚焦标记并关闭弹框
+const focusMarkerAndClose = (item) => {
+  focusMarker(item)
+  closeResultsModal()
+}
+
 onMounted(() => {
+  checkMobile()
   window.addEventListener('resize', handleResize)
   // 初始化时检查是否为移动端
   if (window.innerWidth <= 768) {
@@ -228,27 +321,79 @@ const focusMarker = (item) => {
 }
 
 // 处理 InfoWindow 中的操作
-const onInfoWindowAction = ({ action, data }) => {
+const onInfoWindowAction = async ({ action, data }) => {
   if (action === 'navigate') {
-    // 导航功能
+    // 步行导航功能
     const { lng, lat } = data
-    const navUrl = `https://uri.amap.com/navigation?to=${lng},${lat}&mode=car&policy=1&src=mypage&coordinate=gaode&callnative=1`
-    const appUrl = `androidamap://navi?sourceApplication=垃圾桶定位系统&lat=${lat}&lon=${lng}&dev=0&style=2`
-    
-    const iframe = document.createElement('iframe')
-    iframe.style.display = 'none'
-    iframe.src = appUrl
-    document.body.appendChild(iframe)
-    
-    setTimeout(() => {
-      document.body.removeChild(iframe)
-      window.open(navUrl, '_blank')
-    }, 2000)
+    navigationDestination.value = { lng, lat }
+    await startNavigation({ lng, lat })
   } else if (action === 'open-image') {
     // 打开图片
     const { imageUrl } = data
     window.open(imageUrl, '_blank')
   }
+}
+
+// 开始步行导航
+const startNavigation = async (destination) => {
+  if (!mapRef.value || !mapRef.value.navigateTo) {
+    alert('地图未准备好，请稍后再试')
+    return
+  }
+
+  if (!userLocation.value) {
+    alert('请先获取您的位置')
+    return
+  }
+
+  try {
+    await mapRef.value.navigateTo(destination, userLocation.value)
+  } catch (error) {
+    console.error('步行路线规划失败:', error)
+    
+    // 如果路线规划失败，直接打开外部导航（不显示提示）
+    const { lng, lat } = destination
+    openExternalNavigationWithMode(lng, lat, 'walking')
+  }
+}
+
+// 导航完成回调
+const onNavigationReady = (info) => {
+  navigationInfo.value = info
+}
+
+// 关闭导航
+const closeNavigation = () => {
+  if (mapRef.value && mapRef.value.clearNavigation) {
+    mapRef.value.clearNavigation()
+  }
+  navigationInfo.value = null
+  navigationDestination.value = null
+}
+
+// 打开外部导航（高德地图步行导航）
+const openExternalNavigation = () => {
+  if (!navigationDestination.value) return
+  
+  const { lng, lat } = navigationDestination.value
+  openExternalNavigationWithMode(lng, lat, 'walking')
+}
+
+// 打开外部导航（步行模式）
+const openExternalNavigationWithMode = (lng, lat, mode) => {
+  // 高德地图App URL（Android）- 步行模式
+  // 使用 route/plan 接口，添加 mode=walk 参数指定步行模式
+  const appUrl = `androidamap://route/plan?sourceApplication=垃圾桶定位系统&dlat=${lat}&dlon=${lng}&dname=垃圾桶位置&mode=walk&dev=0&style=2`
+  
+  // 尝试打开App（不打开新网页）
+  const iframe = document.createElement('iframe')
+  iframe.style.display = 'none'
+  iframe.src = appUrl
+  document.body.appendChild(iframe)
+  
+  setTimeout(() => {
+    document.body.removeChild(iframe)
+  }, 2000)
 }
 
 onMounted(() => {
@@ -726,5 +871,260 @@ onMounted(() => {
     padding: 12px;
   }
 }
+
+/* 手机端搜索结果按钮 */
+.mobile-results-button {
+  display: none;
+  padding: 10px 15px;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+}
+
+/* 手机端搜索结果弹框 */
+.mobile-results-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000;
+  pointer-events: none;
+}
+
+.mobile-results-modal.open {
+  pointer-events: auto;
+}
+
+.modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.mobile-results-modal.open .modal-overlay {
+  opacity: 1;
+}
+
+.modal-content {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg-primary);
+  border-radius: 20px 20px 0 0;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.mobile-results-modal.open .modal-content {
+  transform: translateY(0);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.modal-close-btn {
+  background: none;
+  border: none;
+  font-size: 32px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: var(--transition-base);
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.modal-close-btn:active {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 15px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.modal-body .result-item {
+  margin-bottom: 12px;
+}
+
+.modal-body .result-item:last-child {
+  margin-bottom: 0;
+}
+
+/* 手机端显示相关样式 */
+@media (max-width: 768px) {
+  .mobile-results-button {
+    display: block;
+  }
+  
+  .mobile-results-modal {
+    display: block;
+  }
+  
+  .results-list {
+    display: none;
+  }
+}
+
+/* 导航信息面板 */
+.navigation-panel {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+  max-width: 400px;
+  background: var(--bg-primary);
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+.navigation-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 20px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.navigation-header h4 {
+  margin: 0;
+  font-size: 16px;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.close-nav-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: var(--transition-base);
+  line-height: 1;
+}
+
+.close-nav-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.navigation-content {
+  padding: 15px 20px;
+}
+
+.nav-info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.nav-info-item:last-of-type {
+  margin-bottom: 15px;
+}
+
+.nav-label {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.nav-value {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.nav-actions {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid var(--border-color);
+}
+
+.btn-sm {
+  padding: 10px 16px;
+  font-size: 13px;
+}
+
+/* 移动端导航面板样式 */
+@media (max-width: 768px) {
+  .navigation-panel {
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    max-width: none;
+  }
+
+  .navigation-header {
+    padding: 12px 15px;
+  }
+
+  .navigation-header h4 {
+    font-size: 15px;
+  }
+
+  .navigation-content {
+    padding: 12px 15px;
+  }
+
+  .nav-info-item {
+    margin-bottom: 10px;
+  }
+
+  .nav-label,
+  .nav-value {
+    font-size: 13px;
+  }
+
+  .btn-sm {
+    padding: 12px 16px;
+    font-size: 14px;
+    min-height: 44px;
+  }
+}
+
 </style>
 
