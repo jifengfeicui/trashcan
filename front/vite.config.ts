@@ -14,8 +14,9 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:38080',
-        changeOrigin: true
+        target: 'https://localhost:38080',
+        changeOrigin: true,
+        secure: false // 如果使用自签名证书，设置为 false
       }
     }
   }

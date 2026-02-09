@@ -38,6 +38,7 @@ func InitRouter() {
 		authGroup.Use(middle.JWTAuth())
 		{
 			authGroup.GET("/users/me", api.GetCurrentUser)
+			authGroup.GET("/users/me/trashcans", api.GetUserTrashCans)
 		}
 
 		// 垃圾桶相关接口（公开）
@@ -49,6 +50,8 @@ func InitRouter() {
 		trashCanAuthGroup.Use(middle.JWTAuth())
 		{
 			trashCanAuthGroup.POST("/trashcans", api.CreateTrashCan)
+			trashCanAuthGroup.PUT("/trashcans/:id", api.UpdateTrashCan)
+			trashCanAuthGroup.DELETE("/trashcans/:id", api.DeleteTrashCan)
 			trashCanAuthGroup.POST("/trashcans/:id/like", api.ToggleLike)
 			trashCanAuthGroup.POST("/trashcans/:id/dislike", api.ToggleDislike)
 		}

@@ -48,6 +48,7 @@
             当前位置: {{ currentLocation.lng.toFixed(6) }}, {{ currentLocation.lat.toFixed(6) }}
           </p>
           <p v-else class="hint">点击按钮获取您的当前位置</p>
+          <p v-if="loadingAddress" class="hint">正在获取地址描述...</p>
         </div>
 
         <div v-if="locationMode === 'manual'" class="form-group">
@@ -79,9 +80,11 @@
           <input 
             v-model="formData.address" 
             type="text" 
-            placeholder="例如: 北京市朝阳区xxx街道"
+            placeholder="例如: 北京市朝阳区xxx街道（将根据位置自动填充）"
             class="input"
+            :disabled="loadingAddress"
           />
+          <p v-if="loadingAddress" class="hint">正在获取地址...</p>
         </div>
 
         <div class="form-group">
@@ -135,6 +138,7 @@ import { ref, reactive, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { createTrashCan } from '@/api/trashcan'
 import { useUserStore } from '@/stores/user'
+import { getAddressByLocation } from '@/utils/geocoder'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -147,6 +151,8 @@ const imagePreview = ref(null)
 const selectedFile = ref(null)
 const submitting = ref(false)
 const sidebarOpen = ref(false)
+const loadingAddress = ref(false) // 是否正在加载地址
+let addressTimer = null // 地址获取防抖定时器
 
 const toggleSidebar = () => {
   sidebarOpen.value = !sidebarOpen.value
@@ -183,6 +189,11 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
+  // 清理定时器
+  if (addressTimer) {
+    clearTimeout(addressTimer)
+    addressTimer = null
+  }
 })
 
 const formData = reactive({
@@ -193,7 +204,7 @@ const formData = reactive({
 })
 
 // 获取当前位置
-const getCurrentLocation = () => {
+const getCurrentLocation = async () => {
   if (!navigator.geolocation) {
     alert('您的浏览器不支持地理定位功能')
     return
@@ -202,7 +213,7 @@ const getCurrentLocation = () => {
   locating.value = true
 
   navigator.geolocation.getCurrentPosition(
-    (position) => {
+    async (position) => {
       const lat = position.coords.latitude
       const lng = position.coords.longitude
       const location = { lng, lat }
@@ -210,6 +221,9 @@ const getCurrentLocation = () => {
       formData.latitude = lat
       formData.longitude = lng
       locating.value = false
+
+      // 自动获取地址描述
+      await fetchAddressByLocation(lng, lat)
     },
     (error) => {
       locating.value = false
@@ -236,11 +250,47 @@ const getCurrentLocation = () => {
   )
 }
 
+// 根据经纬度获取地址描述
+const fetchAddressByLocation = async (lng, lat) => {
+  if (!lng || !lat) return
+
+  loadingAddress.value = true
+  try {
+    const address = await getAddressByLocation(lng, lat)
+    if (address) {
+      formData.address = address
+    }
+  } catch (error) {
+    console.warn('获取地址失败:', error)
+    // 不显示错误提示，因为地址是可选的
+  } finally {
+    loadingAddress.value = false
+  }
+}
+
 // 监听位置模式变化
 watch(locationMode, (newMode) => {
   if (newMode === 'current' && currentLocation.value) {
     formData.latitude = currentLocation.value.lat
     formData.longitude = currentLocation.value.lng
+  }
+})
+
+// 监听手动输入的经纬度变化，自动获取地址
+watch([() => formData.longitude, () => formData.latitude], ([lng, lat]) => {
+  // 清除之前的定时器
+  if (addressTimer) {
+    clearTimeout(addressTimer)
+    addressTimer = null
+  }
+
+  // 只在手动输入模式下，且经纬度都有值时才获取地址
+  if (locationMode.value === 'manual' && lng && lat) {
+    // 延迟执行，避免用户输入时频繁请求
+    addressTimer = setTimeout(() => {
+      fetchAddressByLocation(lng, lat)
+      addressTimer = null
+    }, 1000) // 1秒延迟
   }
 })
 

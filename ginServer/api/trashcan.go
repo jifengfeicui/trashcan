@@ -1,6 +1,7 @@
 package api
 
 import (
+	"os"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -263,4 +264,237 @@ func GetTrashCanDetail(c *gin.Context) {
 	}
 
 	common.OkWithData(result, c)
+}
+
+// GetUserTrashCans 获取当前用户上传的垃圾桶列表（分页）
+// GET /api/users/me/trashcans?page=1&page_size=10
+func GetUserTrashCans(c *gin.Context) {
+	// 从中间件获取用户ID
+	userID, exists := c.Get("userID")
+	if !exists {
+		common.FailWithAuthority(c)
+		return
+	}
+	userIDUint := userID.(uint)
+
+	// 获取分页参数
+	pageStr := c.DefaultQuery("page", "1")
+	pageSizeStr := c.DefaultQuery("page_size", "10")
+
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 1 {
+		page = 1
+	}
+
+	pageSize, err := strconv.Atoi(pageSizeStr)
+	if err != nil || pageSize < 1 {
+		pageSize = 10
+	}
+	if pageSize > 100 {
+		pageSize = 100 // 限制最大每页数量
+	}
+
+	// 查询总数
+	var total int64
+	if err := global.DB.Model(&model.TrashCan{}).
+		Where("user_id = ?", userIDUint).
+		Count(&total).Error; err != nil {
+		global.SugarLogger.Errorf("查询垃圾桶总数失败: %v", err)
+		common.FailWithMessage("查询失败", c)
+		return
+	}
+
+	// 计算总页数
+	totalPages := int((total + int64(pageSize) - 1) / int64(pageSize))
+	if totalPages < 1 {
+		totalPages = 1
+	}
+
+	// 查询列表数据
+	var trashCans []model.TrashCan
+	offset := (page - 1) * pageSize
+	if err := global.DB.Where("user_id = ?", userIDUint).
+		Order("created_at DESC").
+		Offset(offset).
+		Limit(pageSize).
+		Find(&trashCans).Error; err != nil {
+		global.SugarLogger.Errorf("查询垃圾桶列表失败: %v", err)
+		common.FailWithMessage("查询失败", c)
+		return
+	}
+
+	// 构建返回数据
+	type TrashCanItem struct {
+		ID          uint    `json:"id"`
+		Latitude    float64 `json:"latitude"`
+		Longitude   float64 `json:"longitude"`
+		Address     string  `json:"address"`
+		Description string  `json:"description"`
+		ImageURL    string  `json:"image_url"`
+		CreatedAt   string  `json:"created_at"`
+		UpdatedAt   string  `json:"updated_at"`
+	}
+
+	var list []TrashCanItem
+	for _, tc := range trashCans {
+		list = append(list, TrashCanItem{
+			ID:          tc.ID,
+			Latitude:    tc.Latitude,
+			Longitude:   tc.Longitude,
+			Address:     tc.Address,
+			Description: tc.Description,
+			ImageURL:    utils.GetImageURL(tc.ImagePath),
+			CreatedAt:   tc.CreatedAt.Format("2006-01-02 15:04:05"),
+			UpdatedAt:   tc.UpdatedAt.Format("2006-01-02 15:04:05"),
+		})
+	}
+
+	result := map[string]interface{}{
+		"list":        list,
+		"total":       total,
+		"page":        page,
+		"page_size":   pageSize,
+		"total_pages": totalPages,
+	}
+
+	common.OkWithData(result, c)
+}
+
+// UpdateTrashCan 更新垃圾桶信息
+// PUT /api/trashcans/:id
+func UpdateTrashCan(c *gin.Context) {
+	// 获取垃圾桶ID
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		common.ParamError(c)
+		return
+	}
+
+	// 从中间件获取用户ID
+	userID, exists := c.Get("userID")
+	if !exists {
+		common.FailWithAuthority(c)
+		return
+	}
+	userIDUint := userID.(uint)
+
+	// 查询垃圾桶是否存在且属于当前用户
+	var trashCan model.TrashCan
+	if err := global.DB.Where("id = ? AND user_id = ?", id, userIDUint).First(&trashCan).Error; err != nil {
+		common.FailWithMessage("垃圾桶不存在或无权限", c)
+		return
+	}
+
+	// 解析表单数据
+	address := c.PostForm("address")
+	description := c.PostForm("description")
+
+	// 更新地址和描述
+	updates := map[string]interface{}{
+		"address":     address,
+		"description": description,
+	}
+
+	// 处理图片上传（如果提供了新图片）
+	file, err := c.FormFile("image")
+	if err == nil {
+		// 有图片上传，先删除旧图片
+		if trashCan.ImagePath != "" {
+			if err := os.Remove(trashCan.ImagePath); err != nil {
+				global.SugarLogger.Warnf("删除旧图片失败: %v", err)
+				// 继续执行，不中断流程
+			}
+		}
+
+		// 保存新图片
+		uploadDir := global.CONFIG.UploadConfig.ImageDir
+		if uploadDir == "" {
+			uploadDir = "uploads/trashcans"
+		}
+
+		// 确保上传目录存在
+		if err := utils.EnsureUploadDir(uploadDir); err != nil {
+			global.SugarLogger.Errorf("创建上传目录失败: %v", err)
+			common.FailWithMessage("创建上传目录失败", c)
+			return
+		}
+
+		// 保存图片
+		imagePath, err := utils.SaveImage(file, uploadDir)
+		if err != nil {
+			global.SugarLogger.Errorf("保存图片失败: %v", err)
+			common.FailWithMessage("保存图片失败: "+err.Error(), c)
+			return
+		}
+
+		updates["image_path"] = imagePath
+	}
+
+	// 更新数据库
+	if err := global.DB.Model(&trashCan).Updates(updates).Error; err != nil {
+		global.SugarLogger.Errorf("更新垃圾桶失败: %v", err)
+		common.FailWithMessage("更新失败", c)
+		return
+	}
+
+	// 重新查询以获取更新后的数据
+	global.DB.First(&trashCan, id)
+
+	// 返回更新结果
+	result := map[string]interface{}{
+		"id":          trashCan.ID,
+		"latitude":    trashCan.Latitude,
+		"longitude":   trashCan.Longitude,
+		"address":     trashCan.Address,
+		"description": trashCan.Description,
+		"image_url":   utils.GetImageURL(trashCan.ImagePath),
+		"updated_at":  trashCan.UpdatedAt.Format("2006-01-02 15:04:05"),
+	}
+
+	common.OkWithDetailed(result, "更新成功", c)
+}
+
+// DeleteTrashCan 删除垃圾桶
+// DELETE /api/trashcans/:id
+func DeleteTrashCan(c *gin.Context) {
+	// 获取垃圾桶ID
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		common.ParamError(c)
+		return
+	}
+
+	// 从中间件获取用户ID
+	userID, exists := c.Get("userID")
+	if !exists {
+		common.FailWithAuthority(c)
+		return
+	}
+	userIDUint := userID.(uint)
+
+	// 查询垃圾桶是否存在且属于当前用户
+	var trashCan model.TrashCan
+	if err := global.DB.Where("id = ? AND user_id = ?", id, userIDUint).First(&trashCan).Error; err != nil {
+		common.FailWithMessage("垃圾桶不存在或无权限", c)
+		return
+	}
+
+	// 删除关联的图片文件
+	if trashCan.ImagePath != "" {
+		if err := os.Remove(trashCan.ImagePath); err != nil {
+			global.SugarLogger.Warnf("删除图片文件失败: %v", err)
+			// 继续执行，不中断流程
+		}
+	}
+
+	// 删除数据库记录
+	if err := global.DB.Delete(&trashCan).Error; err != nil {
+		global.SugarLogger.Errorf("删除垃圾桶失败: %v", err)
+		common.FailWithMessage("删除失败", c)
+		return
+	}
+
+	common.OkWithMessage("删除成功", c)
 }

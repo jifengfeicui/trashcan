@@ -73,3 +73,49 @@ export function toggleDislike(id) {
   })
 }
 
+/**
+ * 获取用户上传的垃圾桶列表（分页）
+ * @param {number} page - 页码，默认1
+ * @param {number} pageSize - 每页数量，默认10
+ * @returns {Promise}
+ */
+export function getUserTrashCans(page = 1, pageSize = 10) {
+  return request({
+    url: '/users/me/trashcans',
+    method: 'get',
+    params: {
+      page,
+      page_size: pageSize
+    }
+  })
+}
+
+/**
+ * 更新垃圾桶信息
+ * @param {number|string} id - 垃圾桶ID
+ * @param {FormData} formData - 表单数据，包含address, description, image（可选）
+ * @returns {Promise}
+ */
+export function updateTrashCan(id, formData) {
+  return request({
+    url: `/trashcans/${id}`,
+    method: 'put',
+    data: formData,
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  })
+}
+
+/**
+ * 删除垃圾桶
+ * @param {number|string} id - 垃圾桶ID
+ * @returns {Promise}
+ */
+export function deleteTrashCan(id) {
+  return request({
+    url: `/trashcans/${id}`,
+    method: 'delete'
+  })
+}
+

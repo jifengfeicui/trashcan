@@ -12,22 +12,15 @@
     <!-- 侧边栏遮罩层 -->
     <div v-if="sidebarOpen" class="sidebar-overlay" @click="closeSidebar"></div>
 
-    <div class="search-panel" :class="{ open: sidebarOpen }">
-      <div class="search-panel-header">
-        <h2>查找附近垃圾桶</h2>
-        <button class="close-sidebar-btn" @click="closeSidebar" aria-label="关闭">
-          <span>×</span>
-        </button>
-      </div>
-      <!-- 用户信息显示 -->
-      <div v-if="userStore.isAuthenticated" class="user-info">
-        <span class="username">{{ userStore.userInfo?.username }}</span>
-        <button @click="handleLogout" class="btn-logout">退出</button>
-      </div>
-      <div v-else class="user-info">
-        <button @click="goToLogin" class="btn-login">登录</button>
-      </div>
-      <div class="search-panel-content">
+    <div class="content-wrapper">
+      <div class="search-panel" :class="{ open: sidebarOpen }">
+        <div class="search-panel-header">
+          <h2>查找附近垃圾桶</h2>
+          <button class="close-sidebar-btn" @click="closeSidebar" aria-label="关闭">
+            <span>×</span>
+          </button>
+        </div>
+        <div class="search-panel-content">
         <div class="search-form">
           <div class="form-row">
             <div class="form-group form-group-inline">
@@ -93,9 +86,9 @@
           </button>
         </div>
       </div>
-    </div>
+      </div>
     
-    <div class="map-panel">
+      <div class="map-panel">
       <MapContainer 
         ref="mapRef"
         :center="mapCenter" 
@@ -130,6 +123,7 @@
           </div>
         </div>
       </div>
+    </div>
     </div>
     
     <!-- 手机端搜索结果弹框 -->
@@ -382,18 +376,6 @@ const onInfoWindowAction = async ({ action, data }) => {
   }
 }
 
-// 退出登录
-const handleLogout = () => {
-  if (confirm('确定要退出登录吗？')) {
-    userStore.logout()
-    router.push('/login')
-  }
-}
-
-// 跳转到登录页
-const goToLogin = () => {
-  router.push('/login')
-}
 
 // 开始步行导航
 const startNavigation = async (destination) => {
@@ -477,9 +459,61 @@ onMounted(() => {
 <style scoped>
 .home-container {
   display: flex;
+  flex-direction: column;
   height: 100%;
   overflow: hidden;
   position: relative;
+}
+
+/* 用户信息顶部栏 */
+.user-info-topbar {
+  width: 100%;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  background: var(--bg-secondary);
+  flex-shrink: 0;
+  z-index: 100;
+}
+
+/* 内容包装器 */
+.content-wrapper {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.user-info-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-info-topbar .username {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.user-info-topbar .btn-logout,
+.user-info-topbar .btn-login {
+  padding: 6px 12px;
+  border: 1px solid var(--color-primary);
+  background: transparent;
+  color: var(--color-primary);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: var(--transition-base);
+}
+
+.user-info-topbar .btn-logout:hover,
+.user-info-topbar .btn-login:hover {
+  background: var(--color-primary);
+  color: white;
 }
 
 /* 移动端侧边栏切换按钮 */
@@ -551,6 +585,8 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   transition: transform 0.3s ease;
+  flex: 1;
+  min-height: 0;
 }
 
 .search-panel-header {
@@ -568,38 +604,6 @@ onMounted(() => {
   color: var(--text-primary);
 }
 
-.user-info {
-  padding: 10px 20px;
-  border-bottom: 1px solid var(--border-color);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--bg-secondary);
-}
-
-.username {
-  color: var(--text-primary);
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.btn-logout,
-.btn-login {
-  padding: 6px 12px;
-  border: 1px solid var(--color-primary);
-  background: transparent;
-  color: var(--color-primary);
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
-  transition: var(--transition-base);
-}
-
-.btn-logout:hover,
-.btn-login:hover {
-  background: var(--color-primary);
-  color: white;
-}
 
 .close-sidebar-btn {
   background: none;
@@ -804,6 +808,7 @@ onMounted(() => {
   flex: 1;
   position: relative;
   min-width: 0; /* 防止flex子元素溢出 */
+  min-height: 0;
 }
 
 /* 响应式设计 */
@@ -812,6 +817,10 @@ onMounted(() => {
     flex-direction: column;
     height: 100vh;
     overflow: hidden;
+  }
+
+  .content-wrapper {
+    flex-direction: column;
   }
 
   .mobile-sidebar-toggle {

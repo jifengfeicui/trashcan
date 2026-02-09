@@ -1,8 +1,11 @@
 <script setup>
 import { ref, watch, onMounted, onUnmounted } from 'vue'
-import { RouterView, useRoute } from 'vue-router'
+import { RouterView, useRoute, useRouter } from 'vue-router'
+import { useUserStore } from '@/stores/user'
 
 const route = useRoute()
+const router = useRouter()
+const userStore = useUserStore()
 const mobileMenuOpen = ref(false)
 
 const toggleMobileMenu = () => {
@@ -32,6 +35,21 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
 })
+
+// 退出登录
+const handleLogout = () => {
+  if (confirm('确定要退出登录吗？')) {
+    userStore.logout()
+    router.push('/login')
+    closeMobileMenu()
+  }
+}
+
+// 跳转到登录页
+const goToLogin = () => {
+  router.push('/login')
+  closeMobileMenu()
+}
 </script>
 
 <template>
@@ -42,6 +60,15 @@ onUnmounted(() => {
         <nav class="nav desktop-nav">
           <router-link to="/" class="nav-link">首页</router-link>
           <router-link to="/upload" class="nav-link">上传位置</router-link>
+          <!-- 用户信息 -->
+          <div v-if="userStore.isAuthenticated" class="user-info-nav">
+            <router-link to="/profile" class="nav-link">用户中心</router-link>
+            <span class="username-nav">{{ userStore.userInfo?.username }}</span>
+            <button @click="handleLogout" class="btn-logout-nav">退出</button>
+          </div>
+          <div v-else class="user-info-nav">
+            <button @click="goToLogin" class="btn-login-nav">登录</button>
+          </div>
         </nav>
         <button class="mobile-menu-btn" @click="toggleMobileMenu" aria-label="菜单">
           <span class="hamburger-icon" :class="{ active: mobileMenuOpen }">
@@ -54,6 +81,15 @@ onUnmounted(() => {
       <nav class="nav mobile-nav" :class="{ open: mobileMenuOpen }">
         <router-link to="/" class="nav-link" @click="closeMobileMenu">首页</router-link>
         <router-link to="/upload" class="nav-link" @click="closeMobileMenu">上传位置</router-link>
+        <router-link v-if="userStore.isAuthenticated" to="/profile" class="nav-link" @click="closeMobileMenu">用户中心</router-link>
+        <!-- 移动端用户信息 -->
+        <div v-if="userStore.isAuthenticated" class="user-info-nav mobile-user-info">
+          <span class="username-nav">{{ userStore.userInfo?.username }}</span>
+          <button @click="handleLogout" class="btn-logout-nav">退出</button>
+        </div>
+        <div v-else class="user-info-nav mobile-user-info">
+          <button @click="goToLogin" class="btn-login-nav">登录</button>
+        </div>
       </nav>
     </header>
     <main class="app-main">
@@ -225,6 +261,47 @@ body {
   width: 100%;
   padding: 16px 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* 用户信息导航样式 */
+.user-info-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.username-nav {
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.btn-logout-nav,
+.btn-login-nav {
+  padding: 6px 12px;
+  border: 1px solid white;
+  background: transparent;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.3s;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-logout-nav:hover,
+.btn-login-nav:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.mobile-user-info {
+  width: 100%;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  justify-content: space-between;
 }
 
 .mobile-menu-overlay {

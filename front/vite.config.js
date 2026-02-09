@@ -30,11 +30,11 @@ function getBackendURL() {
   // 如果设置了VITE_USE_LOCAL_IP，使用局域网IP
   if (process.env.VITE_USE_LOCAL_IP === 'true') {
     const localIP = getLocalIP()
-    return `http://${localIP}:38080`
+    return `https://${localIP}:38080`
   }
   
-  // 默认使用localhost
-  return 'http://localhost:38080'
+  // 默认使用localhost（HTTPS）
+  return 'https://localhost:38080'
 }
 
 const backendURL = getBackendURL()

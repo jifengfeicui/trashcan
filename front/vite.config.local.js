@@ -20,9 +20,9 @@ function getLocalIP() {
 }
 
 const localIP = getLocalIP()
-const backendURL = `http://${localIP}:38080`
+const backendURL = `https://${localIP}:38080`
 
-console.log(`🌐 前端访问地址: http://${localIP}:5173`)
+console.log(`🌐 前端访问地址: https://${localIP}:5173`)
 console.log(`🔗 后端API地址: ${backendURL}`)
 
 export default defineConfig({
@@ -42,11 +42,13 @@ export default defineConfig({
       '/api': {
         target: backendURL,
         changeOrigin: true,
+        secure: false, // 如果使用自签名证书，设置为 false
         rewrite: (path) => path.replace(/^\/api/, '/api')
       },
       '/uploads': {
         target: backendURL,
         changeOrigin: true,
+        secure: false, // 如果使用自签名证书，设置为 false
       }
     }
   }
