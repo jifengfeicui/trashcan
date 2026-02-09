@@ -1,0 +1,49 @@
+/* 中国色 - 吊子配色方案 */
+/* 参考: https://zhongguose.com/#diaozi */
+
+:root {
+  /* 主色调 - 吊子 (Diaozi) */
+  --color-diaozi: #8B6F47;        /* 吊子主色 - 暖棕色 */
+  --color-diaozi-light: #B89A6F;  /* 浅吊子 */
+  --color-diaozi-lighter: #D4C4A8; /* 更浅吊子 */
+  --color-diaozi-dark: #6B5435;    /* 深吊子 */
+  --color-diaozi-darker: #4A3C26;  /* 更深吊子 */
+  
+  /* 辅助色 - 中国传统色系 */
+  --color-primary: var(--color-diaozi);
+  --color-primary-light: var(--color-diaozi-light);
+  --color-primary-dark: var(--color-diaozi-dark);
+  
+  /* 背景色 */
+  --bg-primary: #F5F3F0;          /* 米白色背景 */
+  --bg-secondary: #FFFFFF;         /* 纯白 */
+  --bg-tertiary: #FAF8F5;         /* 浅米色 */
+  
+  /* 文字颜色 */
+  --text-primary: #2C2416;        /* 深棕色文字 */
+  --text-secondary: #5C4E3A;      /* 中棕色文字 */
+  --text-tertiary: #8B7D6B;       /* 浅棕色文字 */
+  --text-disabled: #B8B0A5;       /* 禁用文字 */
+  
+  /* 边框颜色 */
+  --border-color: #D9D1C7;        /* 浅棕色边框 */
+  --border-color-hover: var(--color-diaozi-light);
+  --border-color-focus: var(--color-diaozi);
+  
+  /* 功能色 */
+  --color-success: #52C41A;       /* 成功绿 */
+  --color-success-light: #73D13D;
+  --color-warning: #FAAD14;        /* 警告黄 */
+  --color-error: #F5222D;          /* 错误红 */
+  --color-error-light: #FF7875;
+  --color-info: #1890FF;           /* 信息蓝 */
+  
+  /* 阴影 */
+  --shadow-sm: 0 1px 2px rgba(139, 111, 71, 0.08);
+  --shadow-md: 0 2px 8px rgba(139, 111, 71, 0.12);
+  --shadow-lg: 0 4px 16px rgba(139, 111, 71, 0.16);
+  
+  /* 过渡效果 */
+  --transition-base: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+

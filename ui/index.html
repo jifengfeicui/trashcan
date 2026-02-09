@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>垃圾桶定位系统</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=811010fd93771b8d6b94c534eebe4133"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+</head>
+<body>
+    <div id="app">
+        <div class="container">
+            <header>
+                <h1>🗑️ 垃圾桶定位系统</h1>
+                <div class="controls">
+                    <button @click="searchNearby" class="btn btn-primary">查找附近垃圾桶</button>
+                    <button @click="showUploadForm = !showUploadForm" class="btn btn-secondary">
+                        {{ showUploadForm ? '取消上传' : '上传垃圾桶' }}
+                    </button>
+                </div>
+            </header>
+
+            <div class="main-content">
+                <!-- 地图容器 -->
+                <div id="mapContainer" class="map-container"></div>
+
+                <!-- 上传表单 -->
+                <div v-if="showUploadForm" class="upload-panel">
+                    <h2>上传垃圾桶位置</h2>
+                    <form @submit.prevent="submitTrashCan">
+                        <div class="form-group">
+                            <label>位置选择方式：</label>
+                            <select v-model="uploadMethod" @change="onUploadMethodChange">
+                                <option value="click">点击地图选择</option>
+                                <option value="manual">手动输入坐标</option>
+                            </select>
+                        </div>
+
+                        <div v-if="uploadMethod === 'manual'" class="form-group">
+                            <label>纬度：</label>
+                            <input type="number" v-model.number="formData.latitude" step="0.000001" required>
+                        </div>
+
+                        <div v-if="uploadMethod === 'manual'" class="form-group">
+                            <label>经度：</label>
+                            <input type="number" v-model.number="formData.longitude" step="0.000001" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>地址描述：</label>
+                            <input type="text" v-model="formData.address" placeholder="例如：北京市朝阳区xxx街道">
+                        </div>
+
+                        <div class="form-group">
+                            <label>详细描述：</label>
+                            <textarea v-model="formData.description" rows="3" placeholder="可选"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>垃圾桶图片：</label>
+                            <input type="file" @change="handleFileSelect" accept="image/*" required>
+                            <div v-if="imagePreview" class="image-preview">
+                                <img :src="imagePreview" alt="预览">
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary" :disabled="uploading">
+                                {{ uploading ? '上传中...' : '提交' }}
+                            </button>
+                            <button type="button" @click="resetForm" class="btn btn-secondary">重置</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 搜索结果列表 -->
+                <div v-if="nearbyTrashCans.length > 0" class="results-panel">
+                    <h3>附近垃圾桶 ({{ nearbyTrashCans.length }})</h3>
+                    <ul class="results-list">
+                        <li v-for="item in nearbyTrashCans" :key="item.id" @click="focusMarker(item.id)" class="result-item">
+                            <div class="result-info">
+                                <strong>{{ item.address || '未命名位置' }}</strong>
+                                <span class="distance">距离: {{ item.distance.toFixed(2) }} 公里</span>
+                            </div>
+                            <div v-if="item.description" class="result-desc">{{ item.description }}</div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 图片放大模态框 -->
+        <div v-if="showImageModal" class="modal" @click="showImageModal = false">
+            <div class="modal-content" @click.stop>
+                <span class="close" @click="showImageModal = false">&times;</span>
+                <img :src="modalImageUrl" alt="垃圾桶图片">
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/map.js"></script>
+    <script src="/static/js/upload.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
+

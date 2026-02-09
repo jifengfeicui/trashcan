@@ -1,0 +1,10 @@
+gin:
+  host: 0.0.0.0
+  port: 38080
+
+amap:
+  api_key: "811010fd93771b8d6b94c534eebe4133"  # 请替换为你的高德地图API Key
+
+upload:
+  image_dir: "uploads/trashcans"  # 图片上传目录
+
