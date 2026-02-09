@@ -239,7 +239,7 @@ const handleInfoWindowAction = (action, data) => {
 const addMarker = (trashCan) => {
   if (!map || !window.AMap) return
 
-  const {latitude, longitude, address, description, image_url, distance, id} = trashCan
+  const {latitude, longitude, address, description, image_url, distance, id, like_count = 0, dislike_count = 0, user_action = 0} = trashCan
 
   // 如果已存在，先移除
   if (markerMap.has(id)) {
@@ -281,7 +281,17 @@ const addMarker = (trashCan) => {
       ${safeDescription ? `<p style="margin: ${isMobile ? '8px' : '5px'} 0; color: #5C4E3A; font-size: ${isMobile ? '15px' : '14px'}; line-height: 1.5;">${safeDescription}</p>` : ''}
       ${distance !== undefined ? `<p style="margin: ${isMobile ? '8px' : '5px'} 0; color: #8B6F47; font-weight: 500; font-size: ${isMobile ? '15px' : '14px'};">距离: ${distance.toFixed(2)} 公里</p>` : ''}
       ${imageUrl ? `<img src="${imageUrl}" style="width: 100%; max-width: ${maxImageWidth}; margin-top: ${isMobile ? '12px' : '10px'}; border-radius: 4px; cursor: pointer; display: block;" alt="垃圾桶图片" data-action="open-image" data-image-url="${imageUrl.replace(/"/g, '&quot;')}" />` : ''}
-      <div style="margin-top: ${isMobile ? '15px' : '10px'};">
+      <div style="margin-top: ${isMobile ? '15px' : '10px'}; display: flex; gap: ${isMobile ? '10px' : '8px'}; flex-wrap: wrap;">
+        <button data-action="like" data-id="${id}" 
+                style="flex: 1; background: ${user_action === 1 ? '#8B6F47' : '#f5f5f5'}; color: ${user_action === 1 ? 'white' : '#333'}; border: 1px solid ${user_action === 1 ? '#8B6F47' : '#ddd'}; padding: ${buttonPadding}; border-radius: 4px; cursor: pointer; transition: all 0.3s; font-size: ${buttonFontSize}; min-height: ${isMobile ? '44px' : 'auto'}; font-weight: 500; -webkit-tap-highlight-color: transparent;">
+          👍 ${like_count || 0}
+        </button>
+        <button data-action="dislike" data-id="${id}" 
+                style="flex: 1; background: ${user_action === -1 ? '#8B6F47' : '#f5f5f5'}; color: ${user_action === -1 ? 'white' : '#333'}; border: 1px solid ${user_action === -1 ? '#8B6F47' : '#ddd'}; padding: ${buttonPadding}; border-radius: 4px; cursor: pointer; transition: all 0.3s; font-size: ${buttonFontSize}; min-height: ${isMobile ? '44px' : 'auto'}; font-weight: 500; -webkit-tap-highlight-color: transparent;">
+          👎 ${dislike_count || 0}
+        </button>
+      </div>
+      <div style="margin-top: ${isMobile ? '12px' : '10px'};">
         <button data-action="navigate" data-lng="${longitude}" data-lat="${latitude}" 
                 style="background: #8B6F47; color: white; border: none; padding: ${buttonPadding}; border-radius: 4px; cursor: pointer; transition: all 0.3s; font-size: ${buttonFontSize}; width: 100%; min-height: ${isMobile ? '44px' : 'auto'}; font-weight: 500; -webkit-tap-highlight-color: transparent;">
           🚶 步行路线
@@ -382,6 +392,11 @@ const addMarker = (trashCan) => {
           e.stopPropagation()
           const imageUrl = target.getAttribute('data-image-url')
           handleInfoWindowAction('open-image', {imageUrl})
+        } else if (action === 'like' || action === 'dislike') {
+          e.preventDefault()
+          e.stopPropagation()
+          const trashCanId = target.getAttribute('data-id')
+          handleInfoWindowAction(action, {id: trashCanId})
         }
       }
 
@@ -484,6 +499,11 @@ onMounted(async () => {
         e.stopPropagation()
         const imageUrl = target.getAttribute('data-image-url')
         handleInfoWindowAction('open-image', {imageUrl})
+      } else if (action === 'like' || action === 'dislike') {
+        e.preventDefault()
+        e.stopPropagation()
+        const trashCanId = target.getAttribute('data-id')
+        handleInfoWindowAction(action, {id: trashCanId})
       }
     }
   }

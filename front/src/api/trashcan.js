@@ -49,3 +49,27 @@ export function getTrashCanDetail(id) {
   })
 }
 
+/**
+ * 点赞垃圾桶
+ * @param {number|string} id - 垃圾桶ID
+ * @returns {Promise}
+ */
+export function toggleLike(id) {
+  return request({
+    url: `/trashcans/${id}/like`,
+    method: 'post'
+  })
+}
+
+/**
+ * 点踩垃圾桶
+ * @param {number|string} id - 垃圾桶ID
+ * @returns {Promise}
+ */
+export function toggleDislike(id) {
+  return request({
+    url: `/trashcans/${id}/dislike`,
+    method: 'post'
+  })
+}
+

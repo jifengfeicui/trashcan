@@ -19,6 +19,14 @@
           <span>×</span>
         </button>
       </div>
+      <!-- 用户信息显示 -->
+      <div v-if="userStore.isAuthenticated" class="user-info">
+        <span class="username">{{ userStore.userInfo?.username }}</span>
+        <button @click="handleLogout" class="btn-logout">退出</button>
+      </div>
+      <div v-else class="user-info">
+        <button @click="goToLogin" class="btn-login">登录</button>
+      </div>
       <div class="search-panel-content">
         <div class="search-form">
           <div class="form-row">
@@ -161,15 +169,20 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import MapContainer from '@/components/MapContainer.vue'
-import { getNearbyTrashCans } from '@/api/trashcan'
+import { getNearbyTrashCans, toggleLike, toggleDislike } from '@/api/trashcan'
+import { useUserStore } from '@/stores/user'
+
+const router = useRouter()
+const userStore = useUserStore()
 
 const mapRef = ref(null)
 const mapCenter = ref([116.397428, 39.90923]) // 默认北京
 const userLocation = ref(null)
 const trashCans = ref([])
 const loading = ref(false)
-const searchRadius = ref(5)
+const searchRadius = ref(1)
 const searchLimit = ref(10)
 const sidebarOpen = ref(false)
 const resultsModalOpen = ref(false)
@@ -331,7 +344,55 @@ const onInfoWindowAction = async ({ action, data }) => {
     // 打开图片
     const { imageUrl } = data
     window.open(imageUrl, '_blank')
+  } else if (action === 'like' || action === 'dislike') {
+    // 点赞/点踩
+    if (!userStore.isAuthenticated) {
+      alert('请先登录')
+      router.push('/login')
+      return
+    }
+    
+    const { id } = data
+    try {
+      let response
+      if (action === 'like') {
+        response = await toggleLike(id)
+      } else {
+        response = await toggleDislike(id)
+      }
+      
+      if (response.code === 2000 && response.data) {
+        // 更新垃圾桶数据
+        const trashCan = trashCans.value.find(tc => tc.id === parseInt(id))
+        if (trashCan) {
+          trashCan.like_count = response.data.like_count || 0
+          trashCan.dislike_count = response.data.dislike_count || 0
+          trashCan.user_action = response.data.user_action || 0
+          
+          // 重新添加标记以更新InfoWindow内容
+          if (mapRef.value && mapRef.value.addMarker) {
+            mapRef.value.addMarker(trashCan)
+          }
+        }
+      }
+    } catch (error) {
+      console.error('点赞/点踩失败:', error)
+      alert(error.message || '操作失败')
+    }
   }
+}
+
+// 退出登录
+const handleLogout = () => {
+  if (confirm('确定要退出登录吗？')) {
+    userStore.logout()
+    router.push('/login')
+  }
+}
+
+// 跳转到登录页
+const goToLogin = () => {
+  router.push('/login')
 }
 
 // 开始步行导航
@@ -505,6 +566,39 @@ onMounted(() => {
   margin: 0;
   font-size: 18px;
   color: var(--text-primary);
+}
+
+.user-info {
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-secondary);
+}
+
+.username {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.btn-logout,
+.btn-login {
+  padding: 6px 12px;
+  border: 1px solid var(--color-primary);
+  background: transparent;
+  color: var(--color-primary);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: var(--transition-base);
+}
+
+.btn-logout:hover,
+.btn-login:hover {
+  background: var(--color-primary);
+  color: white;
 }
 
 .close-sidebar-btn {

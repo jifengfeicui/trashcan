@@ -132,7 +132,12 @@
 
 <script setup>
 import { ref, reactive, watch, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { createTrashCan } from '@/api/trashcan'
+import { useUserStore } from '@/stores/user'
+
+const router = useRouter()
+const userStore = useUserStore()
 
 const fileInput = ref(null)
 const locationMode = ref('current')
@@ -162,6 +167,13 @@ const handleResize = () => {
 }
 
 onMounted(() => {
+  // 检查登录状态
+  if (!userStore.isAuthenticated) {
+    alert('请先登录')
+    router.push('/login')
+    return
+  }
+  
   window.addEventListener('resize', handleResize)
   // 初始化时检查是否为移动端
   if (window.innerWidth <= 768) {

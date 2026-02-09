@@ -10,7 +10,9 @@ func RegisterTables() {
 	db := global.DB
 	err := db.AutoMigrate(
 		model.Test{},
+		model.User{},
 		model.TrashCan{},
+		model.TrashCanLike{},
 	)
 	if err != nil {
 		global.SugarLogger.Error("register table failed")

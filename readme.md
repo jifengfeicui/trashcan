@@ -20,6 +20,7 @@
 - **数据库**：SQLite (GORM)
 - **日志**：Zap
 - **配置管理**：Viper
+- **静态文件嵌入**：Go embed（前端构建产物嵌入到二进制文件）
 
 ### 前端
 - **框架**：Vue 3
@@ -47,12 +48,16 @@ trashcan/
 │   ├── api/                # API处理器
 │   ├── model/              # 数据模型
 │   ├── router/             # 路由定义
-│   └── middle/             # 中间件
+│   ├── middle/             # 中间件
+│   └── static/             # 静态文件嵌入（前端构建产物）
+│       ├── embed.go        # embed定义
+│       └── dist/           # 前端构建输出（构建时生成）
 ├── initialize/             # 初始化模块
 │   ├── orm/               # ORM配置
 │   └── zapLog.go          # 日志初始化
 ├── utils/                  # 工具函数
 ├── config.yml             # 配置文件
+├── Taskfile.yml           # Task构建配置文件
 ├── main.go                # 程序入口
 └── go.mod                 # Go依赖管理
 ```
@@ -63,6 +68,7 @@ trashcan/
 
 - Go 1.24+ 或 Go 1.22.12+
 - Node.js 20.19.0+ 或 22.12.0+
+- Task（构建工具，用于单二进制部署）
 - 高德地图 API Key
 
 ### 安装步骤
@@ -130,23 +136,108 @@ pnpm dev
 
 ### 生产环境部署
 
-1. **构建前端**
-```bash
-cd front
-npm run build
-# 或
-pnpm build
+本项目使用 [Task](https://taskfile.dev/) 作为构建工具，实现前端编译后嵌入到后端二进制文件中，支持单二进制部署。
+
+#### 安装 Task
+
+**Windows (使用 Scoop):**
+```powershell
+scoop install task
 ```
 
-2. **配置后端静态文件服务**
-
-确保后端配置了静态文件服务，将前端构建产物部署到后端可访问的目录。
-
-3. **运行后端**
+**macOS (使用 Homebrew):**
 ```bash
-go build -o trashcan main.go
+brew install go-task/tap/go-task
+```
+
+**Linux:**
+```bash
+sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b ~/.local/bin
+```
+
+或从 [Task 官网](https://taskfile.dev/installation/) 下载对应平台的二进制文件。
+
+#### 使用 Task 构建
+
+**完整构建（推荐）：**
+```bash
+task build
+```
+
+这会自动完成以下步骤：
+1. 构建前端项目
+2. 将前端构建产物复制到 embed 目录
+3. 编译 Go 二进制文件（前端已嵌入）
+
+**其他常用命令：**
+```bash
+# 检查构建环境
+task check
+
+# 仅构建前端
+task frontend:only
+
+# 仅构建后端（需要前端已构建）
+task backend:only
+
+# 清理构建产物
+task clean
+
+# 生成SSL证书（用于HTTPS）
+task cert:generate
+
+# 开发模式：启动前端开发服务器
+task dev:frontend
+
+# 开发模式：启动后端服务器
+task dev:backend
+```
+
+#### 运行部署
+
+构建完成后，直接运行生成的二进制文件即可：
+
+**Windows:**
+```powershell
+.\trashcan.exe
+```
+
+**Linux/macOS:**
+```bash
 ./trashcan
 ```
+
+前端静态文件已嵌入到二进制文件中，无需单独部署前端文件。访问 `http://localhost:38080` 即可使用完整功能。
+
+#### HTTPS 配置
+
+项目支持 HTTPS 模式，可以通过配置文件启用：
+
+1. **生成自签名证书（开发/测试用）：**
+```bash
+task cert:generate
+```
+
+2. **配置 HTTPS：**
+
+编辑 `config.yml` 文件：
+```yaml
+gin:
+  host: 0.0.0.0
+  port: 38080
+  enable_https: true      # 启用HTTPS
+  cert_file: "cert.pem"   # SSL证书文件路径
+  key_file: "key.pem"     # SSL私钥文件路径
+```
+
+3. **启动服务器：**
+
+服务器将自动使用 HTTPS 模式启动，访问 `https://localhost:38080`。
+
+**注意：**
+- 自签名证书浏览器会显示安全警告，这是正常的
+- 生产环境请使用由 CA（如 Let's Encrypt）签发的正式证书
+- 如果使用正式证书，将证书和私钥文件路径配置到 `cert_file` 和 `key_file` 即可
 
 ## API 接口
 
@@ -182,8 +273,13 @@ GET /api/trashcans/:id
 
 - `gin.host`: 服务器监听地址
 - `gin.port`: 服务器端口
+- `gin.enable_https`: 是否启用HTTPS（默认：false）
+- `gin.cert_file`: SSL证书文件路径（默认：cert.pem）
+- `gin.key_file`: SSL私钥文件路径（默认：key.pem）
 - `amap.api_key`: 高德地图 API Key
 - `upload.image_dir`: 图片上传存储目录
+- `jwt.secret`: JWT密钥（生产环境请修改）
+- `jwt.expire_hours`: Token过期时间（小时）
 
 ### 前端配置
 

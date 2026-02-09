@@ -44,11 +44,50 @@ func GetNearbyTrashCans(c *gin.Context) {
 		return
 	}
 
+	// 获取所有垃圾桶的ID列表
+	var trashCanIDs []uint
+	for _, tc := range trashCans {
+		trashCanIDs = append(trashCanIDs, tc.ID)
+	}
+
+	// 统计每个垃圾桶的点赞和点踩数量
+	likeCounts := make(map[uint]int64)
+	dislikeCounts := make(map[uint]int64)
+	if len(trashCanIDs) > 0 {
+		var likes []struct {
+			TrashCanID uint
+			Count      int64
+		}
+		global.DB.Model(&model.TrashCanLike{}).
+			Where("trash_can_id IN ? AND type = ?", trashCanIDs, 1).
+			Select("trash_can_id, COUNT(*) as count").
+			Group("trash_can_id").
+			Scan(&likes)
+		for _, l := range likes {
+			likeCounts[l.TrashCanID] = l.Count
+		}
+
+		var dislikes []struct {
+			TrashCanID uint
+			Count      int64
+		}
+		global.DB.Model(&model.TrashCanLike{}).
+			Where("trash_can_id IN ? AND type = ?", trashCanIDs, -1).
+			Select("trash_can_id, COUNT(*) as count").
+			Group("trash_can_id").
+			Scan(&dislikes)
+		for _, d := range dislikes {
+			dislikeCounts[d.TrashCanID] = d.Count
+		}
+	}
+
 	// 计算距离并筛选
 	type TrashCanWithDistance struct {
 		model.TrashCan
-		Distance float64 `json:"distance"`  // 距离（公里）
-		ImageURL string  `json:"image_url"` // 图片URL
+		Distance     float64 `json:"distance"`      // 距离（公里）
+		ImageURL     string  `json:"image_url"`     // 图片URL
+		LikeCount    int64   `json:"like_count"`    // 点赞数
+		DislikeCount int64   `json:"dislike_count"` // 点踩数
 	}
 
 	var results []TrashCanWithDistance
@@ -56,9 +95,11 @@ func GetNearbyTrashCans(c *gin.Context) {
 		distance := utils.CalculateDistance(lat, lng, tc.Latitude, tc.Longitude)
 		if distance <= radius {
 			results = append(results, TrashCanWithDistance{
-				TrashCan: tc,
-				Distance: distance,
-				ImageURL: utils.GetImageURL(tc.ImagePath),
+				TrashCan:     tc,
+				Distance:     distance,
+				ImageURL:     utils.GetImageURL(tc.ImagePath),
+				LikeCount:    likeCounts[tc.ID],
+				DislikeCount: dislikeCounts[tc.ID],
 			})
 		}
 	}
@@ -133,8 +174,18 @@ func CreateTrashCan(c *gin.Context) {
 		}
 	}
 
+	// 从中间件获取用户ID
+	userID, exists := c.Get("userID")
+	if !exists {
+		common.FailWithAuthority(c)
+		return
+	}
+
+	userIDUint := userID.(uint)
+
 	// 创建垃圾桶记录
 	trashCan := model.TrashCan{
+		UserID:      &userIDUint,
 		Latitude:    lat,
 		Longitude:   lng,
 		Address:     address,
@@ -176,16 +227,39 @@ func GetTrashCanDetail(c *gin.Context) {
 		return
 	}
 
+	// 统计点赞和点踩数量
+	var likeCount int64
+	var dislikeCount int64
+	global.DB.Model(&model.TrashCanLike{}).
+		Where("trash_can_id = ? AND type = ?", id, 1).
+		Count(&likeCount)
+	global.DB.Model(&model.TrashCanLike{}).
+		Where("trash_can_id = ? AND type = ?", id, -1).
+		Count(&dislikeCount)
+
+	// 获取当前用户的操作状态（如果已登录）
+	var userAction int8 = 0 // 0=未操作, 1=点赞, -1=点踩
+	userID, exists := c.Get("userID")
+	if exists {
+		var like model.TrashCanLike
+		if err := global.DB.Where("user_id = ? AND trash_can_id = ?", userID, id).First(&like).Error; err == nil {
+			userAction = like.Type
+		}
+	}
+
 	// 构建返回数据
 	result := map[string]interface{}{
-		"id":          trashCan.ID,
-		"latitude":    trashCan.Latitude,
-		"longitude":   trashCan.Longitude,
-		"address":     trashCan.Address,
-		"description": trashCan.Description,
-		"image_url":   utils.GetImageURL(trashCan.ImagePath),
-		"created_at":  trashCan.CreatedAt,
-		"updated_at":  trashCan.UpdatedAt,
+		"id":            trashCan.ID,
+		"latitude":      trashCan.Latitude,
+		"longitude":     trashCan.Longitude,
+		"address":       trashCan.Address,
+		"description":   trashCan.Description,
+		"image_url":     utils.GetImageURL(trashCan.ImagePath),
+		"like_count":    likeCount,
+		"dislike_count": dislikeCount,
+		"user_action":   userAction, // 当前用户的操作：0=未操作, 1=点赞, -1=点踩
+		"created_at":    trashCan.CreatedAt,
+		"updated_at":    trashCan.UpdatedAt,
 	}
 
 	common.OkWithData(result, c)

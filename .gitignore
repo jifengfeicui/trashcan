@@ -145,6 +145,19 @@ bin/
 dist/
 build/
 
+# Frontend build outputs (embedded in Go binary)
+front/dist/
+ginServer/static/dist/
+
+# Binary outputs
+trashcan
+trashcan.exe
+
+# SSL certificates
+*.pem
+cert.pem
+key.pem
+
 # Coverage reports
 coverage/
 *.coverprofile
