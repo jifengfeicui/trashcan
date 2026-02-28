@@ -15,3 +15,7 @@ jwt:
   secret: "trashcan-secret-key-change-in-production"  # JWT密钥，生产环境请修改
   expire_hours: 24  # Token过期时间（小时）
 
+wechat:
+  app_id: ""  # 微信小程序 AppID
+  app_secret: ""  # 微信小程序 AppSecret
+

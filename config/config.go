@@ -25,10 +25,17 @@ type JWTConfig struct {
 	ExpireHours int    `mapstructure:"expire_hours"`
 }
 
+// WechatConfig 微信配置
+type WechatConfig struct {
+	AppID     string `mapstructure:"app_id"`
+	AppSecret string `mapstructure:"app_secret"`
+}
+
 // System 定义项目配置文件结构体
 type System struct {
 	GinConfig    *GinConfig    `mapstructure:"gin"`
 	AmapConfig   *AmapConfig   `mapstructure:"amap"`
 	UploadConfig *UploadConfig `mapstructure:"upload"`
 	JWTConfig    *JWTConfig    `mapstructure:"jwt"`
+	WechatConfig *WechatConfig `mapstructure:"wechat"`
 }
