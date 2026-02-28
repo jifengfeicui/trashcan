@@ -136,22 +136,30 @@ Page({
   buildMarkers(list) {
     return list
       .filter((item) => item.latitude && item.longitude)
-      .map((item) => ({
-        id: Number(item.id),
-        latitude: Number(item.latitude),
-        longitude: Number(item.longitude),
-        width: 28,
-        height: 28,
-        callout: {
-          content: `${item.address || "垃圾桶"}\n${this.formatDistance(item.distance)}`,
-          color: "#223126",
-          fontSize: 12,
-          borderRadius: 6,
-          padding: 6,
-          bgColor: "#ffffff",
-          display: "BYCLICK"
+      .map((item) => {
+        const uploaderText = item.uploader_name ? `👤 ${item.uploader_name}` : ""
+        const addressText = item.address || "垃圾桶"
+        const content = uploaderText 
+          ? `${uploaderText}\n${addressText}\n${this.formatDistance(item.distance)}`
+          : `${addressText}\n${this.formatDistance(item.distance)}`
+        
+        return {
+          id: Number(item.id),
+          latitude: Number(item.latitude),
+          longitude: Number(item.longitude),
+          width: 28,
+          height: 28,
+          callout: {
+            content,
+            color: "#223126",
+            fontSize: 12,
+            borderRadius: 6,
+            padding: 6,
+            bgColor: "#ffffff",
+            display: "BYCLICK"
+          }
         }
-      }))
+      })
   },
 
   formatDistance(distance) {

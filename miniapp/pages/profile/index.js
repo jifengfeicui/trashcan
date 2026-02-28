@@ -1,4 +1,4 @@
-const { getCurrentUser } = require("../../utils/api/user")
+const { getCurrentUser, updateCurrentUser } = require("../../utils/api/user")
 const { getUserTrashCans, deleteTrashCan } = require("../../utils/api/trashcan")
 const { resolveImageURL } = require("../../utils/request")
 const { isAuthenticated, clearAuth } = require("../../utils/auth")
@@ -9,6 +9,11 @@ Page({
     loadingUser: false,
     loadingList: false,
     userInfo: null,
+    editing: false,
+    editForm: {
+      nickname: "",
+      avatar: ""
+    },
     trashCans: [],
     page: 1,
     pageSize: 10,
@@ -163,5 +168,68 @@ Page({
     wx.navigateTo({
       url: "/pages/upload/index"
     })
+  },
+
+  startEdit() {
+    const { userInfo } = this.data
+    this.setData({
+      editing: true,
+      editForm: {
+        nickname: userInfo.nickname || "",
+        avatar: userInfo.avatar || ""
+      }
+    })
+  },
+
+  cancelEdit() {
+    this.setData({ editing: false })
+  },
+
+  handleInput(e) {
+    const field = e.currentTarget.dataset.field
+    const value = e.detail.value
+    this.setData({
+      [`editForm.${field}`]: value
+    })
+  },
+
+  chooseAvatar() {
+    wx.chooseMedia({
+      count: 1,
+      mediaType: ["image"],
+      sourceType: ["album", "camera"],
+      success: (res) => {
+        const tempFilePath = res.tempFiles[0].tempFilePath
+        this.setData({
+          "editForm.avatar": tempFilePath
+        })
+      }
+    })
+  },
+
+  saveProfile() {
+    const { editForm } = this.data
+    this.setData({ loadingUser: true })
+
+    updateCurrentUser(editForm.nickname, editForm.avatar)
+      .then((res) => {
+        wx.showToast({
+          title: "保存成功",
+          icon: "success"
+        })
+        this.setData({
+          userInfo: res.data || null,
+          editing: false
+        })
+      })
+      .catch((err) => {
+        wx.showToast({
+          title: err.message || "保存失败",
+          icon: "none"
+        })
+      })
+      .finally(() => {
+        this.setData({ loadingUser: false })
+      })
   }
 })

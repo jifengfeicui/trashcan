@@ -35,9 +35,18 @@ function wechatLogin(code, nickname, avatar) {
   })
 }
 
+function updateCurrentUser(nickname, avatar) {
+  return request({
+    url: "/users/me",
+    method: "PUT",
+    data: { nickname, avatar }
+  })
+}
+
 module.exports = {
   register,
   login,
   getCurrentUser,
-  wechatLogin
+  wechatLogin,
+  updateCurrentUser
 }

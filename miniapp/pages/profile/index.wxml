@@ -14,15 +14,49 @@
 
   <block wx:if="{{authed}}">
     <view class="card">
+      <view class="user-header" bindtap="startEdit">
+        <image wx:if="{{userInfo.avatar}}" class="avatar" src="{{userInfo.avatar}}" mode="aspectFill" />
+        <view wx:else class="avatar-placeholder">
+          <text>{{userInfo.username[0]}}</text>
+        </view>
+        <view class="user-info">
+          <text class="nickname">{{userInfo.nickname || userInfo.username}}</text>
+          <text class="edit-hint">点击编辑资料</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="card" wx:if="{{editing}}">
+      <view class="edit-title">编辑资料</view>
+      <view class="form-row">
+        <text class="label">头像</text>
+        <view class="avatar-edit" bindtap="chooseAvatar">
+          <image wx:if="{{editForm.avatar}}" src="{{editForm.avatar}}" mode="aspectFill" class="avatar-preview" />
+          <view wx:else class="avatar-placeholder">
+            <text>+</text>
+          </view>
+        </view>
+      </view>
+      <view class="form-row">
+        <text class="label">昵称</text>
+        <input class="input" value="{{editForm.nickname}}" data-field="nickname" bindinput="handleInput" placeholder="请输入昵称" />
+      </view>
+      <view class="edit-actions">
+        <button size="mini" class="btn-secondary" bindtap="cancelEdit">取消</button>
+        <button size="mini" class="btn-primary" bindtap="saveProfile" loading="{{loadingUser}}">保存</button>
+      </view>
+    </view>
+
+    <view class="card">
       <view class="user-line">
         <text class="label">用户名</text>
-        <text class="value">{{userInfo ? userInfo.username : "加载中..."}}</text>
+        <text class="value">{{userInfo.username}}</text>
       </view>
-      <view class="user-line" wx:if="{{userInfo && userInfo.created_at}}">
+      <view class="user-line" wx:if="{{userInfo.created_at}}">
         <text class="label">注册时间</text>
         <text class="value">{{userInfo.created_at}}</text>
       </view>
-      <button class="btn-danger" bindtap="logout">退出登录</button>
+      <button class="btn-danger" bindtap="logout" wx:if="{{!editing}}">退出登录</button>
     </view>
 
     <view class="card">
