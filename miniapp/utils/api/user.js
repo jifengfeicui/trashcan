@@ -23,8 +23,21 @@ function getCurrentUser() {
   })
 }
 
+function wechatLogin(code, nickname, avatar) {
+  return request({
+    url: "/users/wechat-login",
+    method: "POST",
+    data: { 
+      code, 
+      nickname, 
+      avatar 
+    }
+  })
+}
+
 module.exports = {
   register,
   login,
-  getCurrentUser
+  getCurrentUser,
+  wechatLogin
 }
