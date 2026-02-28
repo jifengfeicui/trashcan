@@ -1,22 +1,49 @@
 .home-page {
-  padding-bottom: 24rpx;
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f7f1e4 0%, #f2e6ce 56%, #efe2c9 100%);
+}
+
+.home-page .card {
+  border-radius: 22rpx;
+  border: 1px solid #e3d2af;
+  background: #fffaf0;
+  box-shadow: 0 10rpx 24rpx rgba(88, 46, 32, 0.09);
 }
 
 .nav-card {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
+  gap: 16rpx;
 }
 
 .title {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #1f2f24;
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #5a2a1f;
+  letter-spacing: 1rpx;
+}
+
+.subtitle {
+  font-size: 22rpx;
+  color: #8d654a;
 }
 
 .nav-actions {
   display: flex;
   gap: 12rpx;
+}
+
+.home-page .btn-secondary {
+  background: #efe1c2;
+  color: #6f4030;
+  border: 1px solid #d9c29f;
+}
+
+.home-page .btn-primary {
+  background: linear-gradient(135deg, #a23626 0%, #be5536 100%);
+  color: #ffffff;
+  box-shadow: 0 8rpx 18rpx rgba(162, 54, 38, 0.24);
 }
 
 .filters {
@@ -30,23 +57,36 @@
 
 .label {
   display: block;
-  margin-bottom: 8rpx;
-  font-size: 24rpx;
-  color: #4f5b64;
+  margin-bottom: 10rpx;
+  font-size: 26rpx;
+  color: #634434;
+  font-weight: 600;
 }
 
 .small-input {
-  min-height: 72rpx;
+  min-height: 84rpx;
+  height: 84rpx;
+  line-height: 84rpx;
+  padding: 0 20rpx;
+  border-radius: 14rpx;
+  border: 1px solid #d8c2a2;
+  background: #fffdf8;
+  color: #2e2018;
+  font-size: 30rpx;
+  box-sizing: border-box;
 }
 
 .actions {
-  margin-top: 12rpx;
+  margin-top: 18rpx;
   display: flex;
-  gap: 12rpx;
+  gap: 14rpx;
 }
 
 .action-btn {
   flex: 1;
+  min-height: 82rpx;
+  line-height: 82rpx;
+  border-radius: 14rpx;
 }
 
 .map-card {
@@ -63,14 +103,15 @@
   font-size: 28rpx;
   font-weight: 600;
   margin-bottom: 16rpx;
-  color: #1f2f24;
+  color: #5a2a1f;
 }
 
 .trash-item {
-  border: 1px solid #e4ebe6;
+  border: 1px solid #e3d2af;
   border-radius: 12rpx;
   padding: 16rpx;
   margin-bottom: 14rpx;
+  background: #fffdf7;
 }
 
 .trash-header {
@@ -82,19 +123,19 @@
 .trash-address {
   font-size: 28rpx;
   font-weight: 600;
-  color: #1f2f24;
+  color: #5a2a1f;
   flex: 1;
 }
 
 .trash-distance {
   font-size: 24rpx;
-  color: #55616a;
+  color: #8d654a;
 }
 
 .trash-desc {
   margin-top: 8rpx;
   display: block;
-  color: #5a6770;
+  color: #7a5a48;
   font-size: 24rpx;
 }
 
@@ -118,5 +159,5 @@
 
 .empty-card {
   text-align: center;
-  color: #637078;
+  color: #8d654a;
 }

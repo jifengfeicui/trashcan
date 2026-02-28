@@ -1,6 +1,9 @@
 <view class="container home-page">
   <view class="card nav-card">
-    <view class="title">垃圾桶定位系统（微信小程序）</view>
+    <view class="nav-text">
+      <text class="title">垃圾桶定位系统</text>
+      <text class="subtitle">清街净巷 · 一键定位</text>
+    </view>
     <view class="nav-actions">
       <button size="mini" class="btn-secondary" bindtap="goUpload">上传位置</button>
       <button size="mini" class="btn-primary" bindtap="goProfileOrLogin">{{authed ? "用户中心" : "登录"}}</button>
