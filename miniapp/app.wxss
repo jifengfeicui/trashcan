@@ -1,6 +1,7 @@
 page {
   background: #f4f7f5;
   color: #1f2f24;
+  min-height: 100vh;
 }
 
 .container {

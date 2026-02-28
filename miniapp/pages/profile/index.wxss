@@ -170,6 +170,9 @@
   padding: 16rpx;
   margin-top: 10rpx;
   font-size: 28rpx;
+  height: 80rpx;
+  min-height: 80rpx;
+  box-sizing: border-box;
 }
 
 .edit-actions {
