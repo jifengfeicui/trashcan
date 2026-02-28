@@ -16,6 +16,6 @@ jwt:
   expire_hours: 24  # Token过期时间（小时）
 
 wechat:
-  app_id: ""  # 微信小程序 AppID
-  app_secret: ""  # 微信小程序 AppSecret
+  app_id: "wxf2fe0c4b70a786aa"  # 微信小程序 AppID
+  app_secret: "3325500df28d6861882af46b5d3123de"  # 微信小程序 AppSecret
 

@@ -37,9 +37,9 @@ func GetNearbyTrashCans(c *gin.Context) {
 	radius, _ := strconv.ParseFloat(radiusStr, 64)
 	limit, _ := strconv.Atoi(limitStr)
 
-	// 查询所有垃圾桶
+	// 查询所有垃圾桶，预加载用户信息
 	var trashCans []model.TrashCan
-	if err := global.DB.Find(&trashCans).Error; err != nil {
+	if err := global.DB.Preload("User").Find(&trashCans).Error; err != nil {
 		global.SugarLogger.Errorf("查询垃圾桶失败: %v", err)
 		common.FailWithMessage("查询失败", c)
 		return
@@ -85,22 +85,32 @@ func GetNearbyTrashCans(c *gin.Context) {
 	// 计算距离并筛选
 	type TrashCanWithDistance struct {
 		model.TrashCan
-		Distance     float64 `json:"distance"`      // 距离（公里）
-		ImageURL     string  `json:"image_url"`     // 图片URL
-		LikeCount    int64   `json:"like_count"`    // 点赞数
-		DislikeCount int64   `json:"dislike_count"` // 点踩数
+		Distance       float64 `json:"distance"`        // 距离（公里）
+		ImageURL       string  `json:"image_url"`       // 图片URL
+		LikeCount      int64   `json:"like_count"`      // 点赞数
+		DislikeCount   int64   `json:"dislike_count"`   // 点踩数
+		UploaderName   string  `json:"uploader_name"`   // 上传者昵称
+		UploaderAvatar string  `json:"uploader_avatar"` // 上传者头像
 	}
 
 	var results []TrashCanWithDistance
 	for _, tc := range trashCans {
 		distance := utils.CalculateDistance(lat, lng, tc.Latitude, tc.Longitude)
 		if distance <= radius {
+			uploaderName := ""
+			uploaderAvatar := ""
+			if tc.User != nil {
+				uploaderName = tc.User.Nickname
+				uploaderAvatar = tc.User.Avatar
+			}
 			results = append(results, TrashCanWithDistance{
-				TrashCan:     tc,
-				Distance:     distance,
-				ImageURL:     utils.GetImageURL(tc.ImagePath),
-				LikeCount:    likeCounts[tc.ID],
-				DislikeCount: dislikeCounts[tc.ID],
+				TrashCan:       tc,
+				Distance:       distance,
+				ImageURL:       utils.GetImageURL(tc.ImagePath),
+				LikeCount:      likeCounts[tc.ID],
+				DislikeCount:   dislikeCounts[tc.ID],
+				UploaderName:   uploaderName,
+				UploaderAvatar: uploaderAvatar,
 			})
 		}
 	}

@@ -296,3 +296,58 @@ func WechatLogin(c *gin.Context) {
 		common.OkWithDetailed(resultData, "登录成功", c)
 	}
 }
+
+// UpdateCurrentUserRequest 更新用户信息请求
+type UpdateCurrentUserRequest struct {
+	Nickname string `json:"nickname"`
+	Avatar   string `json:"avatar"`
+}
+
+// UpdateCurrentUser 更新当前用户信息
+// PUT /api/users/me
+func UpdateCurrentUser(c *gin.Context) {
+	userID, exists := c.Get("userID")
+	if !exists {
+		common.FailWithAuthority(c)
+		return
+	}
+
+	var req UpdateCurrentUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		common.ParamError(c)
+		return
+	}
+
+	var user model.User
+	if err := global.DB.First(&user, userID).Error; err != nil {
+		common.FailWithMessage("用户不存在", c)
+		return
+	}
+
+	updates := map[string]interface{}{}
+	if req.Nickname != "" {
+		updates["nickname"] = req.Nickname
+	}
+	if req.Avatar != "" {
+		updates["avatar"] = req.Avatar
+	}
+
+	if len(updates) > 0 {
+		if err := global.DB.Model(&user).Updates(updates).Error; err != nil {
+			global.SugarLogger.Errorf("更新用户信息失败: %v", err)
+			common.FailWithMessage("更新失败", c)
+			return
+		}
+		global.DB.First(&user, user.ID)
+	}
+
+	result := map[string]interface{}{
+		"id":         user.ID,
+		"username":   user.Username,
+		"nickname":   user.Nickname,
+		"avatar":     user.Avatar,
+		"created_at": user.CreatedAt,
+	}
+
+	common.OkWithData(result, c)
+}
