@@ -1,0 +1,166 @@
+version: '3'
+
+vars:
+  FRONTEND_DIR: front
+  DIST_DIR: front/dist
+  EMBED_DIR: ginServer/static/dist
+  BINARY_NAME: trashcan
+  BINARY_NAME_WIN: trashcan.exe
+
+tasks:
+  default:
+    desc: 默认任务：构建完整项目
+    deps: [build]
+
+  # 安装前端依赖
+  frontend:install:
+    desc: 安装前端依赖
+    dir: '{{.FRONTEND_DIR}}'
+    cmds:
+      - |
+        {{if eq OS "windows"}}
+        where pnpm >nul 2>&1 && (pnpm install) || (where npm >nul 2>&1 && npm install || (echo "错误: 未找到pnpm或npm" && exit 1))
+        {{else}}
+        if command -v pnpm >/dev/null 2>&1; then
+          pnpm install
+        elif command -v npm >/dev/null 2>&1; then
+          npm install
+        else
+          echo "错误: 未找到pnpm或npm"
+          exit 1
+        fi
+        {{end}}
+
+  # 构建前端
+  frontend:build:
+    desc: 构建前端项目
+    dir: '{{.FRONTEND_DIR}}'
+    cmds:
+      - |
+        {{if eq OS "windows"}}
+        where pnpm >nul 2>&1 && (pnpm build) || (where npm >nul 2>&1 && npm run build || (echo "错误: 未找到pnpm或npm" && exit 1))
+        {{else}}
+        if command -v pnpm >/dev/null 2>&1; then
+          pnpm build
+        elif command -v npm >/dev/null 2>&1; then
+          npm run build
+        else
+          echo "错误: 未找到pnpm或npm"
+          exit 1
+        fi
+        {{end}}
+    generates:
+      - '{{.DIST_DIR}}/index.html'
+
+  # 复制前端构建产物到embed目录
+  frontend:copy:
+    desc: 复制前端构建文件到embed目录
+    deps: [frontend:build]
+    cmds:
+      - |
+        {{if eq OS "windows"}}
+        powershell -Command "if (Test-Path '{{.EMBED_DIR}}') { Remove-Item -Recurse -Force '{{.EMBED_DIR}}' }; Copy-Item -Recurse '{{.DIST_DIR}}' '{{.EMBED_DIR}}'"
+        {{else}}
+        rm -rf {{.EMBED_DIR}}
+        cp -r {{.DIST_DIR}} {{.EMBED_DIR}}
+        {{end}}
+    generates:
+      - '{{.EMBED_DIR}}/index.html'
+
+  # 构建Go二进制文件
+  backend:build:
+    desc: 构建Go二进制文件
+    deps: [frontend:copy]
+    cmds:
+      - |
+        {{if eq OS "windows"}}
+        powershell -Command "$BUILD_TIME = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'; $GIT_COMMIT = (git rev-parse --short HEAD 2>$null); if (-not $GIT_COMMIT) { $GIT_COMMIT = 'unknown' }; go build -ldflags \"-X 'main.BuildTime=$BUILD_TIME' -X 'main.GitCommit=$GIT_COMMIT'\" -o {{.BINARY_NAME_WIN}} main.go"
+        {{else}}
+        BUILD_TIME=$$(date '+%Y-%m-%d %H:%M:%S')
+        GIT_COMMIT=$$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+        go build -ldflags "-X 'main.BuildTime=$$BUILD_TIME' -X 'main.GitCommit=$$GIT_COMMIT'" -o {{.BINARY_NAME}} main.go
+        {{end}}
+    generates:
+      - '{{if eq OS "windows"}}{{.BINARY_NAME_WIN}}{{else}}{{.BINARY_NAME}}{{end}}'
+
+  # 完整构建流程
+  build:
+    desc: 构建完整项目（前端+后端）
+    deps: [backend:build]
+    cmds:
+      - echo "构建完成！"
+      - echo "可执行文件: {{if eq OS "windows"}}{{.BINARY_NAME_WIN}}{{else}}{{.BINARY_NAME}}{{end}}"
+
+  # 清理构建产物
+  clean:
+    desc: 清理构建产物
+    cmds:
+      - |
+        {{if eq OS "windows"}}
+        powershell -Command "if (Test-Path '{{.DIST_DIR}}') { Remove-Item -Recurse -Force '{{.DIST_DIR}}' }; if (Test-Path '{{.EMBED_DIR}}') { Remove-Item -Recurse -Force '{{.EMBED_DIR}}' }; if (Test-Path '{{.BINARY_NAME_WIN}}') { Remove-Item -Force '{{.BINARY_NAME_WIN}}' }"
+        {{else}}
+        rm -rf {{.DIST_DIR}}
+        rm -rf {{.EMBED_DIR}}
+        rm -f {{.BINARY_NAME}}
+        {{end}}
+        echo "清理完成！"
+
+  # 开发模式：运行前端开发服务器
+  dev:frontend:
+    desc: 启动前端开发服务器
+    dir: '{{.FRONTEND_DIR}}'
+    cmds:
+      - |
+        {{if eq OS "windows"}}
+        where pnpm >nul 2>&1 && pnpm dev || npm run dev
+        {{else}}
+        if command -v pnpm >/dev/null 2>&1; then
+          pnpm dev
+        else
+          npm run dev
+        fi
+        {{end}}
+
+  # 开发模式：运行后端服务器
+  dev:backend:
+    desc: 启动后端开发服务器
+    cmds:
+      - go run main.go
+
+  # 仅构建前端（不复制到embed目录）
+  frontend:only:
+    desc: 仅构建前端（开发用）
+    deps: [frontend:build]
+
+  # 仅构建后端（需要前端已构建）
+  backend:only:
+    desc: 仅构建后端（需要前端已构建）
+    deps: [frontend:copy]
+    cmds:
+      - task: backend:build
+
+  # 生成SSL证书
+  cert:generate:
+    desc: 生成自签名SSL证书（用于HTTPS）
+    cmds:
+      - go run scripts/generate_cert.go
+    generates:
+      - cert.pem
+      - key.pem
+
+  # 检查环境
+  check:
+    desc: 检查构建环境
+    cmds:
+      - |
+        echo "检查构建环境..."
+        {{if eq OS "windows"}}
+        where node >nul 2>&1 && echo "✓ Node.js已安装" || echo "✗ Node.js未安装"
+        where go >nul 2>&1 && echo "✓ Go已安装" || echo "✗ Go未安装"
+        where pnpm >nul 2>&1 && echo "✓ pnpm已安装" || echo "✗ pnpm未安装（将使用npm）"
+        {{else}}
+        command -v node >/dev/null 2>&1 && echo "✓ Node.js已安装" || echo "✗ Node.js未安装"
+        command -v go >/dev/null 2>&1 && echo "✓ Go已安装" || echo "✗ Go未安装"
+        command -v pnpm >/dev/null 2>&1 && echo "✓ pnpm已安装" || echo "✗ pnpm未安装（将使用npm）"
+        {{end}}
+

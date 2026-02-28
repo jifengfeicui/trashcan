@@ -1,0 +1,149 @@
+.upload-page {
+  min-height: 100vh;
+  padding-bottom: 30rpx;
+  background: linear-gradient(180deg, #f7f1e4 0%, #f2e6ce 56%, #efe2c9 100%);
+}
+
+.upload-page .card {
+  border-radius: 22rpx;
+  border: 1px solid #e3d2af;
+  background: #fffaf0;
+  box-shadow: 0 10rpx 24rpx rgba(88, 46, 32, 0.09);
+}
+
+.nav-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.nav-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.title {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #5a2a1f;
+  letter-spacing: 1rpx;
+}
+
+.subtitle {
+  font-size: 22rpx;
+  color: #8d654a;
+}
+
+.upload-page .btn-secondary {
+  background: #efe1c2;
+  color: #6f4030;
+  border: 1px solid #d9c29f;
+}
+
+.upload-page .btn-primary {
+  background: linear-gradient(135deg, #a23626 0%, #be5536 100%);
+  color: #ffffff;
+  box-shadow: 0 8rpx 18rpx rgba(162, 54, 38, 0.24);
+}
+
+.form-row {
+  margin-bottom: 22rpx;
+}
+
+.label {
+  font-size: 26rpx;
+  color: #634434;
+  display: block;
+  margin-bottom: 10rpx;
+  font-weight: 600;
+}
+
+.mode-group {
+  display: flex;
+  gap: 26rpx;
+  flex-wrap: wrap;
+}
+
+.mode-item {
+  margin-right: 0;
+  color: #583f33;
+  font-size: 26rpx;
+}
+
+.actions {
+  display: flex;
+  gap: 14rpx;
+  margin-bottom: 18rpx;
+}
+
+.action-btn {
+  flex: 1;
+  min-height: 82rpx;
+  line-height: 82rpx;
+  border-radius: 14rpx;
+}
+
+.input-lg {
+  min-height: 84rpx;
+  height: 84rpx;
+  line-height: 84rpx;
+  padding: 0 20rpx;
+  border-radius: 14rpx;
+  border: 1px solid #d8c2a2;
+  background: #fffdf8;
+  color: #2e2018;
+  font-size: 30rpx;
+  box-sizing: border-box;
+}
+
+.textarea {
+  min-height: 140rpx;
+  border-radius: 14rpx;
+  border: 1px solid #d8c2a2;
+  background: #fffdf8;
+  color: #2e2018;
+  padding: 18rpx;
+  box-sizing: border-box;
+}
+
+.hint {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: #90725b;
+}
+
+.upload-box {
+  border: 2rpx dashed #d8c2a2;
+  border-radius: 16rpx;
+  height: 220rpx;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #7b5642;
+  background: #fff8ea;
+}
+
+.preview-box {
+  border: 1px solid #e3d2af;
+  border-radius: 16rpx;
+  overflow: hidden;
+  background: #fffdf7;
+}
+
+.preview {
+  width: 100%;
+  height: 280rpx;
+}
+
+.preview-actions {
+  display: flex;
+  gap: 10rpx;
+  padding: 12rpx;
+}
+
+.preview-actions button {
+  flex: 1;
+}

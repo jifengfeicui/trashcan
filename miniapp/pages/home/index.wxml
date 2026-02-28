@@ -1,0 +1,87 @@
+<view class="container home-page">
+  <view class="card nav-card">
+    <view class="title">垃圾桶定位系统（微信小程序）</view>
+    <view class="nav-actions">
+      <button size="mini" class="btn-secondary" bindtap="goUpload">上传位置</button>
+      <button size="mini" class="btn-primary" bindtap="goProfileOrLogin">{{authed ? "用户中心" : "登录"}}</button>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="filters">
+      <view class="filter-item">
+        <text class="label">半径(km)</text>
+        <input class="input small-input" type="number" value="{{radius}}" bindinput="handleRadiusInput" />
+      </view>
+      <view class="filter-item">
+        <text class="label">数量</text>
+        <input class="input small-input" type="number" value="{{limit}}" bindinput="handleLimitInput" />
+      </view>
+    </view>
+
+    <view class="actions">
+      <button class="btn-secondary action-btn" loading="{{locating}}" bindtap="locateMe">定位我</button>
+      <button class="btn-primary action-btn" loading="{{loading}}" bindtap="searchNearby">搜索附近</button>
+    </view>
+  </view>
+
+  <view class="card map-card">
+    <map
+      id="trash-map"
+      class="map"
+      latitude="{{latitude}}"
+      longitude="{{longitude}}"
+      scale="{{scale}}"
+      markers="{{markers}}"
+      show-location
+      bindmarkertap="handleMarkerTap"
+    />
+  </view>
+
+  <view class="card list-card" wx:if="{{trashCans.length > 0}}">
+    <view class="list-title">搜索结果（{{trashCans.length}}）</view>
+    <block wx:for="{{trashCans}}" wx:key="id">
+      <view class="trash-item">
+        <view class="trash-header">
+          <text class="trash-address">{{item.address || "垃圾桶位置"}}</text>
+          <text class="trash-distance">{{item.distance_text}}</text>
+        </view>
+
+        <text class="trash-desc" wx:if="{{item.description}}">{{item.description}}</text>
+
+        <image
+          wx:if="{{item.image_url}}"
+          class="trash-image"
+          src="{{item.image_url}}"
+          mode="aspectFill"
+          bindtap="previewImage"
+          data-url="{{item.image_url}}"
+        />
+
+        <view class="trash-actions">
+          <button size="mini" class="btn-secondary mini-btn" bindtap="navigateToItem" data-id="{{item.id}}">导航</button>
+          <button
+            size="mini"
+            class="mini-btn {{item.user_action === 1 ? 'btn-primary' : 'btn-secondary'}}"
+            bindtap="handleLike"
+            data-id="{{item.id}}"
+          >
+            👍 {{item.like_count || 0}}
+          </button>
+          <button
+            size="mini"
+            class="mini-btn {{item.user_action === -1 ? 'btn-danger' : 'btn-secondary'}}"
+            bindtap="handleDislike"
+            data-id="{{item.id}}"
+          >
+            👎 {{item.dislike_count || 0}}
+          </button>
+        </view>
+      </view>
+    </block>
+  </view>
+
+  <view class="card empty-card" wx:if="{{!loading && trashCans.length === 0}}">
+    <text class="text-muted">暂无搜索结果，先点击“定位我”再搜索。</text>
+  </view>
+</view>
