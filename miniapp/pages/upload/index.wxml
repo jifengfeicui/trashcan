@@ -1,0 +1,97 @@
+<view class="container upload-page">
+  <view class="card nav-card">
+    <view class="nav-text">
+      <text class="title">上传垃圾桶位置</text>
+      <text class="subtitle">拾净城景 · 共护街巷</text>
+    </view>
+    <button size="mini" class="btn-secondary" bindtap="goHome">返回首页</button>
+  </view>
+
+  <view class="card form-card">
+    <view class="form-row">
+      <text class="label">定位方式</text>
+      <radio-group class="mode-group" bindchange="onModeChange">
+        <label class="mode-item">
+          <radio value="current" checked="{{locationMode === 'current'}}" /> 当前定位
+        </label>
+        <label class="mode-item">
+          <radio value="manual" checked="{{locationMode === 'manual'}}" /> 手动输入
+        </label>
+      </radio-group>
+    </view>
+
+    <view class="actions" wx:if="{{locationMode === 'current'}}">
+      <button class="btn-secondary action-btn" loading="{{locating}}" bindtap="getCurrentLocation">获取当前位置</button>
+      <button class="btn-secondary action-btn" bindtap="chooseLocationByMap">地图选点</button>
+    </view>
+
+    <view class="form-row">
+      <text class="label">经度</text>
+      <input
+        class="input input-lg"
+        type="digit"
+        value="{{form.longitude}}"
+        data-field="longitude"
+        bindinput="handleInput"
+        bindblur="handleCoordBlur"
+        placeholder="例如 116.397428"
+      />
+    </view>
+
+    <view class="form-row">
+      <text class="label">纬度</text>
+      <input
+        class="input input-lg"
+        type="digit"
+        value="{{form.latitude}}"
+        data-field="latitude"
+        bindinput="handleInput"
+        bindblur="handleCoordBlur"
+        placeholder="例如 39.90923"
+      />
+    </view>
+
+    <view class="form-row">
+      <text class="label">地址描述</text>
+      <input
+        class="input input-lg"
+        value="{{form.address}}"
+        data-field="address"
+        bindinput="handleInput"
+        placeholder="可自动填充，也可手动修改"
+      />
+      <text class="text-muted hint" wx:if="{{loadingAddress}}">正在反查地址...</text>
+    </view>
+
+    <view class="form-row">
+      <text class="label">详细描述</text>
+      <textarea
+        class="input textarea"
+        value="{{form.description}}"
+        data-field="description"
+        bindinput="handleInput"
+        placeholder="可选：补充垃圾桶环境说明"
+      />
+    </view>
+
+    <view class="form-row">
+      <text class="label">上传图片（可选）</text>
+      <view class="upload-box" bindtap="chooseImage" wx:if="{{!imagePath}}">
+        <text>点击选择图片</text>
+      </view>
+
+      <view class="preview-box" wx:if="{{imagePath}}">
+        <image class="preview" src="{{imagePath}}" mode="aspectFill" />
+        <view class="preview-actions">
+          <button size="mini" class="btn-secondary" bindtap="chooseImage">重新选择</button>
+          <button size="mini" class="btn-danger" bindtap="removeImage">移除</button>
+        </view>
+      </view>
+    </view>
+
+    <view class="actions">
+      <button class="btn-primary action-btn" loading="{{submitting}}" bindtap="submit">提交</button>
+      <button class="btn-secondary action-btn" bindtap="resetForm">重置</button>
+    </view>
+  </view>
+</view>

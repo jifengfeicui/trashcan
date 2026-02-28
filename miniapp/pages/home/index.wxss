@@ -1,0 +1,122 @@
+.home-page {
+  padding-bottom: 24rpx;
+}
+
+.nav-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #1f2f24;
+}
+
+.nav-actions {
+  display: flex;
+  gap: 12rpx;
+}
+
+.filters {
+  display: flex;
+  gap: 12rpx;
+}
+
+.filter-item {
+  flex: 1;
+}
+
+.label {
+  display: block;
+  margin-bottom: 8rpx;
+  font-size: 24rpx;
+  color: #4f5b64;
+}
+
+.small-input {
+  min-height: 72rpx;
+}
+
+.actions {
+  margin-top: 12rpx;
+  display: flex;
+  gap: 12rpx;
+}
+
+.action-btn {
+  flex: 1;
+}
+
+.map-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.map {
+  width: 100%;
+  height: 520rpx;
+}
+
+.list-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  margin-bottom: 16rpx;
+  color: #1f2f24;
+}
+
+.trash-item {
+  border: 1px solid #e4ebe6;
+  border-radius: 12rpx;
+  padding: 16rpx;
+  margin-bottom: 14rpx;
+}
+
+.trash-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12rpx;
+}
+
+.trash-address {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #1f2f24;
+  flex: 1;
+}
+
+.trash-distance {
+  font-size: 24rpx;
+  color: #55616a;
+}
+
+.trash-desc {
+  margin-top: 8rpx;
+  display: block;
+  color: #5a6770;
+  font-size: 24rpx;
+}
+
+.trash-image {
+  width: 100%;
+  height: 240rpx;
+  margin-top: 12rpx;
+  border-radius: 10rpx;
+}
+
+.trash-actions {
+  display: flex;
+  gap: 8rpx;
+  margin-top: 12rpx;
+}
+
+.mini-btn {
+  flex: 1;
+  font-size: 24rpx;
+}
+
+.empty-card {
+  text-align: center;
+  color: #637078;
+}

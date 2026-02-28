@@ -1,0 +1,57 @@
+<view class="container login-page">
+  <view class="card login-card">
+    <view class="header-row">
+      <view class="header-text">
+        <text class="title">垃圾桶定位系统</text>
+        <text class="subtitle">清街净巷 · 一键定位</text>
+      </view>
+      <button size="mini" class="btn-secondary" bindtap="goHome">首页</button>
+    </view>
+
+    <view class="tabs">
+      <view
+        class="tab {{mode === 'login' ? 'tab-active' : ''}}"
+        data-mode="login"
+        bindtap="switchMode"
+      >登录</view>
+      <view
+        class="tab {{mode === 'register' ? 'tab-active' : ''}}"
+        data-mode="register"
+        bindtap="switchMode"
+      >注册</view>
+    </view>
+
+    <view wx:if="{{mode === 'login'}}">
+      <view class="form-row">
+        <text class="label">用户名</text>
+        <input class="input input-lg" value="{{loginForm.username}}" data-mode="loginForm" data-field="username" bindinput="handleInput" placeholder="请输入用户名" />
+      </view>
+
+      <view class="form-row">
+        <text class="label">密码</text>
+        <input class="input input-lg" password value="{{loginForm.password}}" data-mode="loginForm" data-field="password" bindinput="handleInput" placeholder="请输入密码" />
+      </view>
+    </view>
+
+    <view wx:if="{{mode === 'register'}}">
+      <view class="form-row">
+        <text class="label">用户名</text>
+        <input class="input input-lg" value="{{registerForm.username}}" data-mode="registerForm" data-field="username" bindinput="handleInput" placeholder="3-20个字符" />
+      </view>
+
+      <view class="form-row">
+        <text class="label">密码</text>
+        <input class="input input-lg" password value="{{registerForm.password}}" data-mode="registerForm" data-field="password" bindinput="handleInput" placeholder="至少6个字符" />
+      </view>
+
+      <view class="form-row">
+        <text class="label">确认密码</text>
+        <input class="input input-lg" password value="{{registerForm.confirmPassword}}" data-mode="registerForm" data-field="confirmPassword" bindinput="handleInput" placeholder="再次输入密码" />
+      </view>
+    </view>
+
+    <button class="btn-primary submit-btn" loading="{{loading}}" bindtap="submit">{{mode === 'login' ? '登录' : '注册'}}</button>
+
+    <text class="error" wx:if="{{error}}">{{error}}</text>
+  </view>
+</view>

@@ -1,0 +1,58 @@
+<view class="container">
+  <view class="card nav-card">
+    <text class="title">用户中心</text>
+    <view class="nav-actions">
+      <button size="mini" class="btn-secondary" bindtap="goHome">首页</button>
+      <button size="mini" class="btn-primary" bindtap="goUpload">上传</button>
+    </view>
+  </view>
+
+  <view class="card" wx:if="{{!authed}}">
+    <text class="empty-text">当前未登录，请先登录后查看个人数据。</text>
+    <button class="btn-primary" bindtap="goLogin">去登录</button>
+  </view>
+
+  <block wx:if="{{authed}}">
+    <view class="card">
+      <view class="user-line">
+        <text class="label">用户名</text>
+        <text class="value">{{userInfo ? userInfo.username : "加载中..."}}</text>
+      </view>
+      <view class="user-line" wx:if="{{userInfo && userInfo.created_at}}">
+        <text class="label">注册时间</text>
+        <text class="value">{{userInfo.created_at}}</text>
+      </view>
+      <button class="btn-danger" bindtap="logout">退出登录</button>
+    </view>
+
+    <view class="card">
+      <view class="list-header">
+        <text class="title-sm">我的上传（{{total}}）</text>
+        <text class="text-muted" wx:if="{{loadingList}}">加载中...</text>
+      </view>
+
+      <view wx:if="{{!loadingList && trashCans.length === 0}}" class="empty-text">
+        还没有上传记录，去上传一个吧。
+      </view>
+
+      <block wx:for="{{trashCans}}" wx:key="id">
+        <view class="trash-item">
+          <image wx:if="{{item.image_url}}" class="trash-image" src="{{item.image_url}}" mode="aspectFill" />
+          <view class="trash-main">
+            <text class="trash-address">{{item.address || "未填写地址"}}</text>
+            <text class="trash-desc" wx:if="{{item.description}}">{{item.description}}</text>
+            <text class="meta">坐标：{{item.latitude}}, {{item.longitude}}</text>
+            <text class="meta">创建时间：{{item.created_at}}</text>
+          </view>
+          <button size="mini" class="btn-danger" bindtap="handleDelete" data-id="{{item.id}}">删除</button>
+        </view>
+      </block>
+
+      <view class="pager" wx:if="{{totalPages > 1}}">
+        <button size="mini" class="btn-secondary" bindtap="loadPrev" disabled="{{page <= 1}}">上一页</button>
+        <text class="page-info">第 {{page}} / {{totalPages}} 页</text>
+        <button size="mini" class="btn-secondary" bindtap="loadNext" disabled="{{page >= totalPages}}">下一页</button>
+      </view>
+    </view>
+  </block>
+</view>
