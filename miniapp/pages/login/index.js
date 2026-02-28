@@ -1,10 +1,11 @@
-const { login, register } = require("../../utils/api/user")
+const { login, register, wechatLogin } = require("../../utils/api/user")
 const { setToken, setUserInfo, isAuthenticated } = require("../../utils/auth")
 
 Page({
   data: {
     mode: "login",
     loading: false,
+    wechatLoading: false,
     error: "",
     redirect: "/pages/home/index",
     loginForm: {
@@ -127,6 +128,66 @@ Page({
       .finally(() => {
         this.setData({ loading: false })
       })
+  },
+
+  handleWechatLogin() {
+    if (this.data.wechatLoading) {
+      return
+    }
+
+    this.setData({ wechatLoading: true, error: "" })
+
+    wx.login({
+      success: (loginRes) => {
+        wx.getUserProfile({
+          desc: '用于完善用户资料',
+          success: (profileRes) => {
+            const userInfo = profileRes.userInfo || {}
+            
+            wechatLogin(loginRes.code, userInfo.nickName, userInfo.avatarUrl)
+              .then((res) => {
+                const payload = res.data || {}
+                setToken(payload.token || "")
+                setUserInfo(payload.user || null)
+                wx.showToast({ 
+                  title: payload.is_new ? "注册成功" : "登录成功", 
+                  icon: "success" 
+                })
+                this.redirectAfterAuth()
+              })
+              .catch((err) => {
+                this.setData({ error: err.message || "微信登录失败" })
+              })
+              .finally(() => {
+                this.setData({ wechatLoading: false })
+              })
+          },
+          fail: (profileErr) => {
+            console.log('用户拒绝授权:', profileErr)
+            wechatLogin(loginRes.code, "", "")
+              .then((res) => {
+                const payload = res.data || {}
+                setToken(payload.token || "")
+                setUserInfo(payload.user || null)
+                wx.showToast({ 
+                  title: payload.is_new ? "注册成功" : "登录成功", 
+                  icon: "success" 
+                })
+                this.redirectAfterAuth()
+              })
+              .catch((err) => {
+                this.setData({ error: err.message || "微信登录失败" })
+              })
+              .finally(() => {
+                this.setData({ wechatLoading: false })
+              })
+          }
+        })
+      },
+      fail: (loginErr) => {
+        this.setData({ error: "微信登录失败", wechatLoading: false })
+      }
+    })
   },
 
   redirectAfterAuth() {

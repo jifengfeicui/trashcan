@@ -52,6 +52,10 @@
 
     <button class="btn-primary submit-btn" loading="{{loading}}" bindtap="submit">{{mode === 'login' ? '登录' : '注册'}}</button>
 
+    <button class="wechat-btn" bindtap="handleWechatLogin" loading="{{wechatLoading}}">
+      微信一键登录
+    </button>
+
     <text class="error" wx:if="{{error}}">{{error}}</text>
   </view>
 </view>

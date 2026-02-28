@@ -110,3 +110,17 @@
   color: #b22e2e;
   font-size: 24rpx;
 }
+
+.wechat-btn {
+  margin-top: 30rpx;
+  min-height: 86rpx;
+  line-height: 86rpx;
+  border-radius: 14rpx;
+  background: #07C160;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10rpx;
+  font-size: 30rpx;
+}
