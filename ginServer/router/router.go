@@ -32,6 +32,7 @@ func InitRouter() {
 		// 用户相关接口（公开）
 		v1.POST("/users/register", api.Register)
 		v1.POST("/users/login", api.Login)
+		v1.POST("/users/wechat-login", api.WechatLogin)
 
 		// 用户相关接口（需要认证）
 		authGroup := v1.Group("")
