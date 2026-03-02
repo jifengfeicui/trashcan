@@ -1,5 +1,4 @@
-const { createTrashCan } = require("../../utils/api/trashcan")
-const { uploadFile } = require("../../utils/request")
+const { createTrashCanWithImages } = require("../../utils/api/trashcan")
 const { getAddressByLocation } = require("../../utils/geocoder")
 const { isAuthenticated } = require("../../utils/auth")
 
@@ -9,7 +8,8 @@ Page({
     locating: false,
     loadingAddress: false,
     submitting: false,
-    imagePath: "",
+    imagePaths: [],
+    maxImages: 3,
     form: {
       latitude: "",
       longitude: "",
@@ -119,31 +119,50 @@ Page({
   },
 
   chooseImage() {
+    const { imagePaths, maxImages } = this.data
+    const remaining = maxImages - imagePaths.length
+    
+    if (remaining <= 0) {
+      wx.showToast({
+        title: `最多上传${maxImages}张图片`,
+        icon: "none"
+      })
+      return
+    }
+
     wx.chooseMedia({
-      count: 1,
+      count: remaining,
       mediaType: ["image"],
       sourceType: ["album", "camera"],
       success: (res) => {
-        const file = (res.tempFiles || [])[0]
-        if (!file) {
+        const files = res.tempFiles || []
+        if (files.length === 0) {
           return
         }
 
-        if (file.size > 5 * 1024 * 1024) {
-          wx.showToast({
-            title: "图片不能超过5MB",
-            icon: "none"
-          })
-          return
+        let validFiles = []
+        for (const file of files) {
+          if (file.size > 5 * 1024 * 1024) {
+            wx.showToast({
+              title: "图片不能超过5MB",
+              icon: "none"
+            })
+            continue
+          }
+          validFiles.push(file.tempFilePath)
         }
 
-        this.setData({ imagePath: file.tempFilePath })
+        const newPaths = [...imagePaths, ...validFiles].slice(0, maxImages)
+        this.setData({ imagePaths: newPaths })
       }
     })
   },
 
-  removeImage() {
-    this.setData({ imagePath: "" })
+  removeImage(e) {
+    const index = Number(e.currentTarget.dataset.index)
+    const { imagePaths } = this.data
+    imagePaths.splice(index, 1)
+    this.setData({ imagePaths })
   },
 
   submit() {
@@ -152,7 +171,7 @@ Page({
       return
     }
 
-    const { form, imagePath } = this.data
+    const { form, imagePaths } = this.data
     const latitude = Number(form.latitude)
     const longitude = Number(form.longitude)
 
@@ -173,36 +192,48 @@ Page({
 
     this.setData({ submitting: true })
 
-    const submitTask = imagePath
-      ? uploadFile({
-          url: "/trashcans",
-          filePath: imagePath,
-          formData: payload
+    if (imagePaths.length > 0) {
+      createTrashCanWithImages(payload, imagePaths)
+        .then(() => {
+          wx.showToast({
+            title: "上传成功",
+            icon: "success"
+          })
+          this.resetForm()
         })
-      : createTrashCan(payload)
-
-    submitTask
-      .then(() => {
-        wx.showToast({
-          title: "上传成功",
-          icon: "success"
+        .catch((err) => {
+          wx.showToast({
+            title: err.message || "上传失败",
+            icon: "none"
+          })
         })
-        this.resetForm()
-      })
-      .catch((err) => {
-        wx.showToast({
-          title: err.message || "上传失败",
-          icon: "none"
+        .finally(() => {
+          this.setData({ submitting: false })
         })
-      })
-      .finally(() => {
-        this.setData({ submitting: false })
-      })
+    } else {
+      createTrashCan(payload)
+        .then(() => {
+          wx.showToast({
+            title: "上传成功",
+            icon: "success"
+          })
+          this.resetForm()
+        })
+        .catch((err) => {
+          wx.showToast({
+            title: err.message || "上传失败",
+            icon: "none"
+          })
+        })
+        .finally(() => {
+          this.setData({ submitting: false })
+        })
+    }
   },
 
   resetForm() {
     this.setData({
-      imagePath: "",
+      imagePaths: [],
       form: {
         latitude: "",
         longitude: "",

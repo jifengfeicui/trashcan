@@ -12,6 +12,8 @@ type TrashCan struct {
 	Address     string    `json:"address" gorm:"type:TEXT"`
 	Description string    `json:"description" gorm:"type:TEXT"`
 	ImagePath   string    `json:"image_path" gorm:"type:TEXT"`
+	ImagePath2  string    `json:"image_path_2" gorm:"type:TEXT"`
+	ImagePath3  string    `json:"image_path_3" gorm:"type:TEXT"`
 	CreatedAt   time.Time `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt   time.Time `json:"updated_at" gorm:"autoUpdateTime"`
 }

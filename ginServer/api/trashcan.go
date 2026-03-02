@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 
@@ -87,6 +88,8 @@ func GetNearbyTrashCans(c *gin.Context) {
 		model.TrashCan
 		Distance       float64 `json:"distance"`        // 距离（公里）
 		ImageURL       string  `json:"image_url"`       // 图片URL
+		ImageURL2      string  `json:"image_url_2"`     // 图片2 URL
+		ImageURL3      string  `json:"image_url_3"`     // 图片3 URL
 		LikeCount      int64   `json:"like_count"`      // 点赞数
 		DislikeCount   int64   `json:"dislike_count"`   // 点踩数
 		UploaderName   string  `json:"uploader_name"`   // 上传者昵称
@@ -107,6 +110,8 @@ func GetNearbyTrashCans(c *gin.Context) {
 				TrashCan:       tc,
 				Distance:       distance,
 				ImageURL:       utils.GetImageURL(tc.ImagePath),
+				ImageURL2:      utils.GetImageURL(tc.ImagePath2),
+				ImageURL3:      utils.GetImageURL(tc.ImagePath3),
 				LikeCount:      likeCounts[tc.ID],
 				DislikeCount:   dislikeCounts[tc.ID],
 				UploaderName:   uploaderName,
@@ -160,28 +165,44 @@ func CreateTrashCan(c *gin.Context) {
 	}
 
 	// 处理图片上传
-	var imagePath string
-	file, err := c.FormFile("image")
-	if err == nil {
-		// 有图片上传
-		uploadDir := global.CONFIG.UploadConfig.ImageDir
-		if uploadDir == "" {
-			uploadDir = "uploads/trashcans"
+	uploadDir := global.CONFIG.UploadConfig.ImageDir
+	if uploadDir == "" {
+		uploadDir = "uploads/trashcans"
+	}
+
+	if err := utils.EnsureUploadDir(uploadDir); err != nil {
+		global.SugarLogger.Errorf("创建上传目录失败: %v", err)
+		common.FailWithMessage("创建上传目录失败", c)
+		return
+	}
+
+	var imagePath, imagePath2, imagePath3 string
+
+	// 支持多图上传 (images[0], images[1], images[2])
+	for i := 0; i < 3; i++ {
+		key := "images"
+		if i > 0 {
+			key = fmt.Sprintf("images[%d]", i)
+		}
+		file, err := c.FormFile(key)
+		if err != nil {
+			continue
 		}
 
-		// 确保上传目录存在
-		if err := utils.EnsureUploadDir(uploadDir); err != nil {
-			global.SugarLogger.Errorf("创建上传目录失败: %v", err)
-			common.FailWithMessage("创建上传目录失败", c)
-			return
-		}
-
-		// 保存图片
-		imagePath, err = utils.SaveImage(file, uploadDir)
+		path, err := utils.SaveImage(file, uploadDir)
 		if err != nil {
 			global.SugarLogger.Errorf("保存图片失败: %v", err)
 			common.FailWithMessage("保存图片失败: "+err.Error(), c)
 			return
+		}
+
+		switch i {
+		case 0:
+			imagePath = path
+		case 1:
+			imagePath2 = path
+		case 2:
+			imagePath3 = path
 		}
 	}
 
@@ -202,6 +223,8 @@ func CreateTrashCan(c *gin.Context) {
 		Address:     address,
 		Description: description,
 		ImagePath:   imagePath,
+		ImagePath2:  imagePath2,
+		ImagePath3:  imagePath3,
 	}
 
 	if err := global.DB.Create(&trashCan).Error; err != nil {
@@ -210,13 +233,14 @@ func CreateTrashCan(c *gin.Context) {
 		return
 	}
 
-	// 返回创建结果
 	result := map[string]interface{}{
-		"id":        trashCan.ID,
-		"latitude":  trashCan.Latitude,
-		"longitude": trashCan.Longitude,
-		"address":   trashCan.Address,
-		"image_url": utils.GetImageURL(trashCan.ImagePath),
+		"id":          trashCan.ID,
+		"latitude":    trashCan.Latitude,
+		"longitude":   trashCan.Longitude,
+		"address":     trashCan.Address,
+		"image_url":   utils.GetImageURL(trashCan.ImagePath),
+		"image_url_2": utils.GetImageURL(trashCan.ImagePath2),
+		"image_url_3": utils.GetImageURL(trashCan.ImagePath3),
 	}
 
 	common.OkWithDetailed(result, "创建成功", c)

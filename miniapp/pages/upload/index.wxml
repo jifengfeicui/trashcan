@@ -75,17 +75,21 @@
     </view>
 
     <view class="form-row">
-      <text class="label">上传图片（可选）</text>
-      <view class="upload-box" bindtap="chooseImage" wx:if="{{!imagePath}}">
-        <text>点击选择图片</text>
+      <text class="label">上传图片（可选，最多3张）</text>
+      <view class="images-grid" wx:if="{{imagePaths.length > 0}}">
+        <block wx:for="{{imagePaths}}" wx:key="index">
+          <view class="image-item">
+            <image class="preview" src="{{item}}" mode="aspectFill" />
+            <view class="remove-btn" bindtap="removeImage" data-index="{{index}}">×</view>
+          </view>
+        </block>
+        <view class="add-image-btn" bindtap="chooseImage" wx:if="{{imagePaths.length < maxImages}}">
+          <text>+</text>
+        </view>
       </view>
 
-      <view class="preview-box" wx:if="{{imagePath}}">
-        <image class="preview" src="{{imagePath}}" mode="aspectFill" />
-        <view class="preview-actions">
-          <button size="mini" class="btn-secondary" bindtap="chooseImage">重新选择</button>
-          <button size="mini" class="btn-danger" bindtap="removeImage">移除</button>
-        </view>
+      <view class="upload-box" bindtap="chooseImage" wx:if="{{imagePaths.length === 0}}">
+        <text>点击选择图片</text>
       </view>
     </view>
 
