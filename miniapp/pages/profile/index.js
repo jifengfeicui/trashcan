@@ -313,25 +313,88 @@ Page({
   },
 
   saveEditItem() {
-    const { editingItem, editItemForm } = this.data
+    const { editingItem, editItemForm, editItemImages, editItemHasNewImage } = this.data
     if (!editingItem) return
 
-    this.setData({ loadingList: true })
+    const that = this
+    const token = wx.getStorageSync('token')
+    const uploadUrl = `${getApp().globalData?.API_ORIGIN || 'https://rss.jjfc.abrdns.com:38081'}/api/trashcans/${editingItem}`
 
-    updateTrashCan(editingItem, {
-      address: editItemForm.address,
-      description: editItemForm.description
+    const doUpdate = (newImages) => {
+      const data = {
+        address: editItemForm.address,
+        description: editItemForm.description
+      }
+      if (newImages) {
+        if (newImages[0]) data.image = newImages[0]
+        if (newImages[1]) data.image_2 = newImages[1]
+        if (newImages[2]) data.image_3 = newImages[2]
+      }
+
+      updateTrashCan(editingItem, data)
+        .then(() => {
+          wx.showToast({ title: "保存成功", icon: "success" })
+          that.setData({ editingItem: null })
+          that.loadMyTrashCans(that.data.page)
+        })
+        .catch((err) => {
+          wx.showToast({ title: err.message || "保存失败", icon: "none" })
+        })
+        .finally(() => {
+          that.setData({ loadingList: false })
+        })
+    }
+
+    if (!editItemHasNewImage) {
+      this.setData({ loadingList: true })
+      doUpdate(null)
+      return
+    }
+
+    const tempImages = editItemImages.filter(img => !img.startsWith('http') && !img.startsWith('/'))
+    if (tempImages.length === 0) {
+      this.setData({ loadingList: true })
+      doUpdate(editItemImages)
+      return
+    }
+
+    this.setData({ loadingList: true })
+    const uploadedPaths = ['', '', '']
+    let completed = 0
+
+    tempImages.forEach((filePath, index) => {
+      wx.uploadFile({
+        url: uploadUrl,
+        filePath: filePath,
+        name: `images[${index}]`,
+        header: { 'Authorization': `Bearer ${token}` },
+        formData: index === 0 ? { address: editItemForm.address, description: editItemForm.description } : {},
+        success: (res) => {
+          if (res.statusCode === 200) {
+            try {
+              const json = JSON.parse(res.data)
+              if (json.code === 0 && json.data) {
+                uploadedPaths[index] = json.data.image_path || ''
+              }
+            } catch (e) {}
+          }
+          completed++
+          if (completed >= tempImages.length) {
+            const finalImages = editItemImages.map(img => {
+              if (img.startsWith('http') || img.startsWith('/')) return img
+              const idx = tempImages.indexOf(img)
+              return uploadedPaths[idx] || img
+            })
+            doUpdate(finalImages)
+          }
+        },
+        fail: () => {
+          completed++
+          if (completed >= tempImages.length) {
+            doUpdate(editItemImages)
+          }
+        }
+      })
     })
-      .then(() => {
-        wx.showToast({ title: "保存成功", icon: "success" })
-        this.setData({ editingItem: null })
-        this.loadMyTrashCans(this.data.page)
-      })
-      .catch((err) => {
-        wx.showToast({ title: err.message || "保存失败", icon: "none" })
-      })
-      .finally(() => {
-        this.setData({ loadingList: false })
-      })
   }
 })

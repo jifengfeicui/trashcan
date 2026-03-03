@@ -28,68 +28,74 @@ function createTrashCanWithImages(formData, imagePaths) {
       return
     }
 
+    if (!imagePaths || imagePaths.length === 0) {
+      createTrashCan(formData).then(resolve).catch(reject)
+      return
+    }
+
     const uploadUrl = `${API_ORIGIN}/api/trashcans`
+    const uploadedPaths = ['', '', '']
+    let completed = 0
 
-    let uploadedPaths = []
-    let currentIndex = 0
+    const checkDone = () => {
+      completed++
+      if (completed < imagePaths.length) return
 
-    const uploadNext = () => {
-      if (currentIndex >= imagePaths.length) {
-        const data = { ...formData }
-        if (uploadedPaths[0]) data.image = uploadedPaths[0]
-        if (uploadedPaths[1]) data.image_2 = uploadedPaths[1]
-        if (uploadedPaths[2]) data.image_3 = uploadedPaths[2]
+      const data = { ...formData }
+      if (uploadedPaths[0]) data.image = uploadedPaths[0]
+      if (uploadedPaths[1]) data.image_2 = uploadedPaths[1]
+      if (uploadedPaths[2]) data.image_3 = uploadedPaths[2]
 
-        wx.request({
-          url: uploadUrl,
-          method: 'POST',
-          header: {
-            'Authorization': `Bearer ${token}`,
-            'content-type': 'application/x-www-form-urlencoded'
-          },
-          data,
-          success: (res) => {
-            if (res.data && res.data.code === 0) {
-              resolve(res.data)
-            } else {
-              reject({ message: res.data?.msg || '创建失败' })
-            }
-          },
-          fail: (err) => {
-            reject({ message: err.errMsg || '请求失败' })
-          }
-        })
-        return
-      }
-
-      wx.uploadFile({
+      wx.request({
         url: uploadUrl,
-        filePath: imagePaths[currentIndex],
-        name: `images[${currentIndex}]`,
+        method: 'POST',
         header: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'content-type': 'application/x-www-form-urlencoded'
         },
-        formData: currentIndex === 0 ? formData : {},
+        data,
         success: (res) => {
-          if (res.statusCode === 200) {
-            try {
-              const data = JSON.parse(res.data)
-              if (data.code === 0 && data.data && data.data.image_path) {
-                uploadedPaths.push(data.data.image_path)
-              }
-            } catch (e) {}
+          if (res.data && res.data.code === 0) {
+            resolve(res.data)
+          } else {
+            reject({ message: res.data?.msg || '创建失败' })
           }
-          currentIndex++
-          uploadNext()
         },
         fail: (err) => {
-          currentIndex++
-          uploadNext()
+          reject({ message: err.errMsg || '请求失败' })
         }
       })
     }
 
-    uploadNext()
+    imagePaths.forEach((filePath, index) => {
+      wx.uploadFile({
+        url: uploadUrl,
+        filePath: filePath,
+        name: `images[${index}]`,
+        header: {
+          'Authorization': `Bearer ${token}`
+        },
+        formData: index === 0 ? formData : {},
+        success: (res) => {
+          if (res.statusCode === 200) {
+            try {
+              const json = JSON.parse(res.data)
+              if (json.code === 0 && json.data && json.data.image_path) {
+                uploadedPaths[index] = json.data.image_path
+              } else if (json.code === 0 && json.data) {
+                uploadedPaths[index] = json.data.id ? `trashcans/${json.data.id}_${index}` : ''
+              }
+            } catch (e) {
+              uploadedPaths[index] = ''
+            }
+          }
+          checkDone()
+        },
+        fail: () => {
+          checkDone()
+        }
+      })
+    })
   })
 }
 
