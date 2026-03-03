@@ -1,4 +1,5 @@
 const { request } = require("../request")
+const { API_ORIGIN } = require("../config/index")
 
 function getNearbyTrashCans(lat, lng, radius = 5, limit = 10) {
   return request({
@@ -27,8 +28,7 @@ function createTrashCanWithImages(formData, imagePaths) {
       return
     }
 
-    const apiBase = wx.env.HTTP_BASE || ''
-    const uploadUrl = `${apiBase}/api/trashcans`
+    const uploadUrl = `${API_ORIGIN}/api/trashcans`
 
     let uploadedPaths = []
     let currentIndex = 0
