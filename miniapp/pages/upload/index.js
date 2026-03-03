@@ -166,8 +166,20 @@ Page({
   },
 
   submit() {
-    if (!isAuthenticated()) {
-      this.goLogin()
+    const that = this
+    const token = wx.getStorageSync('token')
+    if (!token) {
+      wx.showModal({
+        title: "需要登录",
+        content: "上传功能需要登录，是否前往登录页？",
+        success: function(res) {
+          if (res.confirm) {
+            wx.navigateTo({
+              url: "/pages/login/index?redirect=%2Fpages%2Fupload%2Findex"
+            })
+          }
+        }
+      })
       return
     }
 

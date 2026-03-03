@@ -125,6 +125,17 @@ function deleteTrashCan(id) {
   })
 }
 
+function updateTrashCan(id, data) {
+  return request({
+    url: `/trashcans/${id}`,
+    method: "PUT",
+    data: data,
+    header: {
+      "content-type": "application/x-www-form-urlencoded"
+    }
+  })
+}
+
 module.exports = {
   getNearbyTrashCans,
   createTrashCan,
@@ -132,5 +143,6 @@ module.exports = {
   getUserTrashCans,
   toggleLike,
   toggleDislike,
-  deleteTrashCan
+  deleteTrashCan,
+  updateTrashCan
 }

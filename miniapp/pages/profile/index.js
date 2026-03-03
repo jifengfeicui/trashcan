@@ -1,5 +1,5 @@
 const { getCurrentUser, updateCurrentUser } = require("../../utils/api/user")
-const { getUserTrashCans, deleteTrashCan } = require("../../utils/api/trashcan")
+const { getUserTrashCans, deleteTrashCan, updateTrashCan } = require("../../utils/api/trashcan")
 const { resolveImageURL } = require("../../utils/request")
 const { isAuthenticated, clearAuth } = require("../../utils/auth")
 
@@ -18,7 +18,12 @@ Page({
     page: 1,
     pageSize: 10,
     total: 0,
-    totalPages: 1
+    totalPages: 1,
+    editingItem: null,
+    editItemForm: {
+      address: "",
+      description: ""
+    }
   },
 
   onShow() {
@@ -230,6 +235,58 @@ Page({
       })
       .finally(() => {
         this.setData({ loadingUser: false })
+      })
+  },
+
+  startEditItem(e) {
+    const id = Number(e.currentTarget.dataset.id)
+    const item = this.data.trashCans.find(it => Number(it.id) === id)
+    if (!item) return
+
+    this.setData({
+      editingItem: id,
+      editItemForm: {
+        address: item.address || "",
+        description: item.description || ""
+      }
+    })
+  },
+
+  cancelEditItem() {
+    this.setData({
+      editingItem: null,
+      editItemForm: { address: "", description: "" }
+    })
+  },
+
+  handleItemInput(e) {
+    const field = e.currentTarget.dataset.field
+    const value = e.detail.value
+    this.setData({
+      [`editItemForm.${field}`]: value
+    })
+  },
+
+  saveEditItem() {
+    const { editingItem, editItemForm } = this.data
+    if (!editingItem) return
+
+    this.setData({ loadingList: true })
+
+    updateTrashCan(editingItem, {
+      address: editItemForm.address,
+      description: editItemForm.description
+    })
+      .then(() => {
+        wx.showToast({ title: "保存成功", icon: "success" })
+        this.setData({ editingItem: null })
+        this.loadMyTrashCans(this.data.page)
+      })
+      .catch((err) => {
+        wx.showToast({ title: err.message || "保存失败", icon: "none" })
+      })
+      .finally(() => {
+        this.setData({ loadingList: false })
       })
   }
 })

@@ -70,7 +70,7 @@
       </view>
 
       <block wx:for="{{trashCans}}" wx:key="id">
-        <view class="trash-item">
+        <view class="trash-item" wx:if="{{editingItem !== item.id}}">
           <image wx:if="{{item.image_url}}" class="trash-image" src="{{item.image_url}}" mode="aspectFill" />
           <view class="trash-main">
             <text class="trash-address">{{item.address || "未填写地址"}}</text>
@@ -78,7 +78,25 @@
             <text class="meta">坐标：{{item.latitude}}, {{item.longitude}}</text>
             <text class="meta">创建时间：{{item.created_at}}</text>
           </view>
-          <button size="mini" class="btn-danger" bindtap="handleDelete" data-id="{{item.id}}">删除</button>
+          <view class="trash-item-actions">
+            <button size="mini" class="btn-secondary" bindtap="startEditItem" data-id="{{item.id}}">编辑</button>
+            <button size="mini" class="btn-danger" bindtap="handleDelete" data-id="{{item.id}}">删除</button>
+          </view>
+        </view>
+
+        <view class="trash-item edit-item" wx:if="{{editingItem === item.id}}">
+          <view class="form-row">
+            <text class="label">地址</text>
+            <input class="input" value="{{editItemForm.address}}" data-field="address" bindinput="handleItemInput" placeholder="地址" />
+          </view>
+          <view class="form-row">
+            <text class="label">描述</text>
+            <textarea class="input textarea" value="{{editItemForm.description}}" data-field="description" bindinput="handleItemInput" placeholder="描述" />
+          </view>
+          <view class="edit-item-actions">
+            <button size="mini" class="btn-secondary" bindtap="cancelEditItem">取消</button>
+            <button size="mini" class="btn-primary" bindtap="saveEditItem" loading="{{loadingList}}">保存</button>
+          </view>
         </view>
       </block>
 

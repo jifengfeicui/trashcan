@@ -126,6 +126,46 @@
   margin: 0 14rpx 14rpx;
 }
 
+.trash-item-actions {
+  display: flex;
+  gap: 8rpx;
+  padding: 0 14rpx 14rpx;
+}
+
+.edit-item {
+  padding: 20rpx;
+}
+
+.edit-item .form-row {
+  margin-bottom: 16rpx;
+}
+
+.edit-item .label {
+  display: block;
+  font-size: 24rpx;
+  color: #634434;
+  margin-bottom: 8rpx;
+  font-weight: 600;
+}
+
+.edit-item .input {
+  border: 1px solid #d8c2a2;
+  border-radius: 8rpx;
+  padding: 12rpx;
+  font-size: 28rpx;
+  background: #fffdf8;
+}
+
+.edit-item .textarea {
+  min-height: 100rpx;
+}
+
+.edit-item-actions {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 16rpx;
+}
+
 .pager {
   margin-top: 14rpx;
   display: flex;
