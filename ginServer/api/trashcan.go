@@ -178,6 +178,31 @@ func CreateTrashCan(c *gin.Context) {
 
 	var imagePath, imagePath2, imagePath3 string
 
+	// 支持前端上传的 image 字段，也支持 images[0], images[1], images[2]
+	// 先尝试读取 image 字段（前端 Upload.vue 使用）
+	if file, err := c.FormFile("image"); err == nil {
+		path, err := utils.SaveImage(file, uploadDir)
+		if err != nil {
+			global.SugarLogger.Errorf("保存图片失败: %v", err)
+			common.FailWithMessage("保存图片失败: "+err.Error(), c)
+			return
+		}
+		imagePath = path
+	} else {
+		// 小程序可能传图片路径字符串（如 uploads/trashcans/xxx.png）
+		if imagePathStr := c.PostForm("image"); imagePathStr != "" {
+			imagePath = imagePathStr
+		}
+	}
+
+	// 支持 image_2, image_3 路径字符串
+	if imagePath2Str := c.PostForm("image_2"); imagePath2Str != "" {
+		imagePath2 = imagePath2Str
+	}
+	if imagePath3Str := c.PostForm("image_3"); imagePath3Str != "" {
+		imagePath3 = imagePath3Str
+	}
+
 	// 支持多图上传 (images[0], images[1], images[2])
 	for i := 0; i < 3; i++ {
 		key := "images"
@@ -365,6 +390,8 @@ func GetUserTrashCans(c *gin.Context) {
 		Address     string  `json:"address"`
 		Description string  `json:"description"`
 		ImageURL    string  `json:"image_url"`
+		ImageURL2   string  `json:"image_url_2"`
+		ImageURL3   string  `json:"image_url_3"`
 		CreatedAt   string  `json:"created_at"`
 		UpdatedAt   string  `json:"updated_at"`
 	}
@@ -378,6 +405,8 @@ func GetUserTrashCans(c *gin.Context) {
 			Address:     tc.Address,
 			Description: tc.Description,
 			ImageURL:    utils.GetImageURL(tc.ImagePath),
+			ImageURL2:   utils.GetImageURL(tc.ImagePath2),
+			ImageURL3:   utils.GetImageURL(tc.ImagePath3),
 			CreatedAt:   tc.CreatedAt.Format("2006-01-02 15:04:05"),
 			UpdatedAt:   tc.UpdatedAt.Format("2006-01-02 15:04:05"),
 		})
@@ -442,6 +471,43 @@ func UpdateTrashCan(c *gin.Context) {
 		return
 	}
 
+	// 支持前端上传的 image 字段，也支持 images[0], images[1], images[2]
+	// 先尝试读取 image 字段（前端 MyTrashCans.vue 使用）
+	if file, err := c.FormFile("image"); err == nil {
+		path, err := utils.SaveImage(file, uploadDir)
+		if err != nil {
+			global.SugarLogger.Errorf("保存图片失败: %v", err)
+			common.FailWithMessage("保存图片失败: "+err.Error(), c)
+			return
+		}
+		updates["image_path"] = path
+	} else {
+		// 小程序可能传图片路径字符串
+		if imagePathStr := c.PostForm("image"); imagePathStr != "" {
+			updates["image_path"] = imagePathStr
+		}
+
+		// 支持 image_2, image_3 路径字符串（包括空字符串以清除图片）
+		if c.PostForm("image_2") != "" {
+			updates["image_path2"] = c.PostForm("image_2")
+		} else if _, exists := c.GetPostForm("image_2"); exists {
+			updates["image_path2"] = ""
+		}
+		if c.PostForm("image_3") != "" {
+			updates["image_path3"] = c.PostForm("image_3")
+		} else if _, exists := c.GetPostForm("image_3"); exists {
+			updates["image_path3"] = ""
+		}
+	}
+
+	// 支持 image_2, image_3 路径字符串
+	if imagePath2Str := c.PostForm("image_2"); imagePath2Str != "" {
+		updates["image_path2"] = imagePath2Str
+	}
+	if imagePath3Str := c.PostForm("image_3"); imagePath3Str != "" {
+		updates["image_path3"] = imagePath3Str
+	}
+
 	// 支持多图上传 images[0], images[1], images[2]
 	for i := 0; i < 3; i++ {
 		key := "images"
@@ -464,9 +530,9 @@ func UpdateTrashCan(c *gin.Context) {
 		case 0:
 			updates["image_path"] = path
 		case 1:
-			updates["image_path_2"] = path
+			updates["image_path2"] = path
 		case 2:
-			updates["image_path_3"] = path
+			updates["image_path3"] = path
 		}
 	}
 
@@ -488,6 +554,8 @@ func UpdateTrashCan(c *gin.Context) {
 		"address":     trashCan.Address,
 		"description": trashCan.Description,
 		"image_url":   utils.GetImageURL(trashCan.ImagePath),
+		"image_url_2": utils.GetImageURL(trashCan.ImagePath2),
+		"image_url_3": utils.GetImageURL(trashCan.ImagePath3),
 		"updated_at":  trashCan.UpdatedAt.Format("2006-01-02 15:04:05"),
 	}
 

@@ -30,10 +30,7 @@ export function createTrashCan(formData) {
   return request({
     url: '/trashcans',
     method: 'post',
-    data: formData,
-    headers: {
-      'Content-Type': 'multipart/form-data'
-    }
+    data: formData
   })
 }
 
@@ -100,10 +97,7 @@ export function updateTrashCan(id, formData) {
   return request({
     url: `/trashcans/${id}`,
     method: 'put',
-    data: formData,
-    headers: {
-      'Content-Type': 'multipart/form-data'
-    }
+    data: formData
   })
 }
 

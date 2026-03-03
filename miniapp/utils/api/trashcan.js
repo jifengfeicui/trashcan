@@ -41,7 +41,7 @@ function uploadImage(filePath) {
         if (res.statusCode === 200) {
           try {
             const json = JSON.parse(res.data)
-            if (json.code === 0 && json.data && json.data.image_path) {
+            if ((json.code === 2000 || json.code === 0) && json.data && json.data.image_path) {
               resolve(json.data.image_path)
             } else {
               reject({ message: json.msg || '上传图片失败' })

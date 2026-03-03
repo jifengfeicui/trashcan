@@ -111,6 +111,13 @@ Page({
         const list = (res.data || []).map((item) => ({
           ...item,
           image_url: resolveImageURL(item.image_url),
+          image_url_2: resolveImageURL(item.image_url_2),
+          image_url_3: resolveImageURL(item.image_url_3),
+          image_urls: [
+            resolveImageURL(item.image_url),
+            resolveImageURL(item.image_url_2),
+            resolveImageURL(item.image_url_3)
+          ].filter(url => url),
           distance_text: this.formatDistance(item.distance),
           user_action: Number(item.user_action || 0),
           like_count: Number(item.like_count || 0),
@@ -187,7 +194,7 @@ Page({
 
   openActionSheet(item) {
     const actions = ["导航到这里"]
-    if (item.image_url) {
+    if (item.image_urls && item.image_urls.length > 0) {
       actions.push("查看图片")
     }
 
@@ -206,8 +213,8 @@ Page({
 
         if (action === "查看图片") {
           wx.previewImage({
-            urls: [item.image_url],
-            current: item.image_url
+            urls: item.image_urls || [],
+            current: item.image_urls ? item.image_urls[0] : ''
           })
           return
         }
@@ -304,14 +311,15 @@ Page({
   },
 
   previewImage(e) {
-    const url = e.currentTarget.dataset.url
-    if (!url) {
+    const urls = e.currentTarget.dataset.urls
+    const current = e.currentTarget.dataset.current
+    if (!urls || urls.length === 0) {
       return
     }
 
     wx.previewImage({
-      urls: [url],
-      current: url
+      urls: urls,
+      current: current
     })
   },
 

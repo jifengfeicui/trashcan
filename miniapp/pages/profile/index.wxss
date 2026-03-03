@@ -96,6 +96,20 @@
   height: 240rpx;
 }
 
+.trash-images {
+  width: 100%;
+}
+
+.image-swiper {
+  width: 100%;
+  height: 240rpx;
+}
+
+.image-swiper image {
+  width: 100%;
+  height: 100%;
+}
+
 .trash-main {
   padding: 14rpx;
 }

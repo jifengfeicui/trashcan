@@ -72,7 +72,14 @@ Page({
         const payload = res.data || {}
         const list = (payload.list || []).map((item) => ({
           ...item,
-          image_url: resolveImageURL(item.image_url)
+          image_url: resolveImageURL(item.image_url),
+          image_url_2: resolveImageURL(item.image_url_2),
+          image_url_3: resolveImageURL(item.image_url_3),
+          image_urls: [
+            resolveImageURL(item.image_url),
+            resolveImageURL(item.image_url_2),
+            resolveImageURL(item.image_url_3)
+          ].filter(url => url)
         }))
 
         this.setData({
@@ -321,12 +328,19 @@ Page({
     const doUpdate = (newImages) => {
       const data = {
         address: editItemForm.address,
-        description: editItemForm.description
+        description: editItemForm.description,
+        image: "",
+        image_2: "",
+        image_3: ""
       }
-      if (newImages) {
-        if (newImages[0]) data.image = newImages[0]
-        if (newImages[1]) data.image_2 = newImages[1]
-        if (newImages[2]) data.image_3 = newImages[2]
+      if (newImages && newImages.length > 0) {
+        data.image = newImages[0] || ""
+      }
+      if (newImages && newImages.length > 1) {
+        data.image_2 = newImages[1] || ""
+      }
+      if (newImages && newImages.length > 2) {
+        data.image_3 = newImages[2] || ""
       }
 
       updateTrashCan(editingItem, data)
@@ -343,13 +357,45 @@ Page({
         })
     }
 
-    if (!editItemHasNewImage) {
+    // 检测是否是临时路径（需要上传）
+    const isTempPath = (path) => {
+      return path && (path.startsWith('http://tmp/') || path.startsWith('https://wxfile/'))
+    }
+
+    // 没有新图片时，检查是否有临时路径需要上传
+    const hasTempImages = editItemImages.some(img => isTempPath(img))
+
+    if (!editItemHasNewImage && !hasTempImages) {
+      // 没有新图片且没有临时路径时，保留原来的图片
+      const data = {
+        address: editItemForm.address,
+        description: editItemForm.description,
+        image: "",
+        image_2: "",
+        image_3: ""
+      }
+      if (editItemImages.length > 0) data.image = editItemImages[0] || ""
+      if (editItemImages.length > 1) data.image_2 = editItemImages[1] || ""
+      if (editItemImages.length > 2) data.image_3 = editItemImages[2] || ""
+
       this.setData({ loadingList: true })
-      doUpdate(null)
+      updateTrashCan(editingItem, data)
+        .then(() => {
+          wx.showToast({ title: "保存成功", icon: "success" })
+          that.setData({ editingItem: null })
+          that.loadMyTrashCans(that.data.page)
+        })
+        .catch((err) => {
+          wx.showToast({ title: err.message || "保存失败", icon: "none" })
+        })
+        .finally(() => {
+          that.setData({ loadingList: false })
+        })
       return
     }
 
-    const tempImages = editItemImages.filter(img => !img.startsWith('http') && !img.startsWith('/'))
+    // 过滤出需要上传的临时图片
+    const tempImages = editItemImages.filter(img => isTempPath(img))
     if (tempImages.length === 0) {
       this.setData({ loadingList: true })
       doUpdate(editItemImages)
@@ -363,7 +409,7 @@ Page({
     Promise.all(uploadPromises)
       .then(uploadedPaths => {
         const finalImages = editItemImages.map(img => {
-          if (img.startsWith('http') || img.startsWith('/')) return img
+          if (!isTempPath(img)) return img
           const idx = tempImages.indexOf(img)
           return uploadedPaths[idx] || img
         })

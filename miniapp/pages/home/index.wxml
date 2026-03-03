@@ -52,14 +52,13 @@
 
         <text class="trash-desc" wx:if="{{item.description}}">{{item.description}}</text>
 
-        <image
-          wx:if="{{item.image_url}}"
-          class="trash-image"
-          src="{{item.image_url}}"
-          mode="aspectFill"
-          bindtap="previewImage"
-          data-url="{{item.image_url}}"
-        />
+        <view class="trash-images" wx:if="{{item.image_urls.length > 0}}">
+          <swiper class="image-swiper" indicator-dots="{{item.image_urls.length > 1}}" autoplay="{{false}}" circular>
+            <swiper-item wx:for="{{item.image_urls}}" wx:key="index" wx:for-item="imgUrl">
+              <image class="trash-image" src="{{imgUrl}}" mode="aspectFill" bindtap="previewImage" data-urls="{{item.image_urls}}" data-current="{{imgUrl}}" />
+            </swiper-item>
+          </swiper>
+        </view>
 
         <view class="trash-actions">
           <button size="mini" class="btn-secondary mini-btn" bindtap="navigateToItem" data-id="{{item.id}}">导航</button>

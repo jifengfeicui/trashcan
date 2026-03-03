@@ -72,6 +72,10 @@ func GetImageURL(imagePath string) string {
 	if imagePath == "" {
 		return ""
 	}
+	// 如果已经是完整的HTTP URL，直接返回
+	if strings.HasPrefix(imagePath, "http://") || strings.HasPrefix(imagePath, "https://") {
+		return imagePath
+	}
 	// 将路径中的反斜杠转换为正斜杠，用于URL
 	urlPath := strings.ReplaceAll(imagePath, "\\", "/")
 	// 如果路径不是以/开头，添加/
