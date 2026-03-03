@@ -23,7 +23,9 @@ Page({
     editItemForm: {
       address: "",
       description: ""
-    }
+    },
+    editItemImages: [],
+    editItemHasNewImage: false
   },
 
   onShow() {
@@ -243,19 +245,62 @@ Page({
     const item = this.data.trashCans.find(it => Number(it.id) === id)
     if (!item) return
 
+    const images = []
+    if (item.image_url) images.push(item.image_url)
+    if (item.image_url_2) images.push(item.image_url_2)
+    if (item.image_url_3) images.push(item.image_url_3)
+
     this.setData({
       editingItem: id,
       editItemForm: {
         address: item.address || "",
         description: item.description || ""
-      }
+      },
+      editItemImages: images,
+      editItemHasNewImage: false
     })
   },
 
   cancelEditItem() {
     this.setData({
       editingItem: null,
-      editItemForm: { address: "", description: "" }
+      editItemForm: { address: "", description: "" },
+      editItemImages: [],
+      editItemHasNewImage: false
+    })
+  },
+
+  chooseEditImage() {
+    const { editItemImages } = this.data
+    const remaining = 3 - editItemImages.length
+
+    if (remaining <= 0) {
+      wx.showToast({ title: "最多3张图片", icon: "none" })
+      return
+    }
+
+    wx.chooseMedia({
+      count: remaining,
+      mediaType: ["image"],
+      sourceType: ["album", "camera"],
+      success: (res) => {
+        const files = res.tempFiles || []
+        const newPaths = files.map(f => f.tempFilePath).slice(0, remaining)
+        this.setData({
+          editItemImages: [...editItemImages, ...newPaths].slice(0, 3),
+          editItemHasNewImage: true
+        })
+      }
+    })
+  },
+
+  removeEditImage(e) {
+    const index = Number(e.currentTarget.dataset.index)
+    const { editItemImages } = this.data
+    editItemImages.splice(index, 1)
+    this.setData({
+      editItemImages,
+      editItemHasNewImage: true
     })
   },
 

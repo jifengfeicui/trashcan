@@ -260,3 +260,49 @@
   gap: 20rpx;
   margin-top: 30rpx;
 }
+
+.edit-item .images-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 10rpx;
+}
+
+.edit-item .image-item {
+  position: relative;
+  width: 140rpx;
+  height: 140rpx;
+}
+
+.edit-item .image-item .preview {
+  width: 100%;
+  height: 100%;
+  border-radius: 8rpx;
+}
+
+.edit-item .remove-btn {
+  position: absolute;
+  top: -8rpx;
+  right: -8rpx;
+  width: 32rpx;
+  height: 32rpx;
+  background: #c93a3a;
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22rpx;
+}
+
+.edit-item .add-image-btn {
+  width: 140rpx;
+  height: 140rpx;
+  border: 2rpx dashed #d8c2a2;
+  border-radius: 8rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8d654a;
+  font-size: 40rpx;
+}

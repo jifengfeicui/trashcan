@@ -86,6 +86,20 @@
 
         <view class="trash-item edit-item" wx:if="{{editingItem === item.id}}">
           <view class="form-row">
+            <text class="label">图片（最多3张）</text>
+            <view class="images-grid">
+              <block wx:for="{{editItemImages}}" wx:key="index">
+                <view class="image-item">
+                  <image class="preview" src="{{item}}" mode="aspectFill" />
+                  <view class="remove-btn" bindtap="removeEditImage" data-index="{{index}}">×</view>
+                </view>
+              </block>
+              <view class="add-image-btn" bindtap="chooseEditImage" wx:if="{{editItemImages.length < 3}}">
+                <text>+</text>
+              </view>
+            </view>
+          </view>
+          <view class="form-row">
             <text class="label">地址</text>
             <input class="input" value="{{editItemForm.address}}" data-field="address" bindinput="handleItemInput" placeholder="地址" />
           </view>

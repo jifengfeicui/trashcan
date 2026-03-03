@@ -1,5 +1,5 @@
 const { request } = require("../request")
-const { API_ORIGIN } = require("../config/index")
+const { API_ORIGIN } = require("../../config/index")
 
 function getNearbyTrashCans(lat, lng, radius = 5, limit = 10) {
   return request({

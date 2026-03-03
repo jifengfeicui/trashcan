@@ -212,6 +212,9 @@ Page({
             icon: "success"
           })
           this.resetForm()
+          setTimeout(() => {
+            wx.switchTab({ url: "/pages/home/index" })
+          }, 1000)
         })
         .catch((err) => {
           wx.showToast({
@@ -230,6 +233,9 @@ Page({
             icon: "success"
           })
           this.resetForm()
+          setTimeout(() => {
+            wx.switchTab({ url: "/pages/home/index" })
+          }, 1000)
         })
         .catch((err) => {
           wx.showToast({
