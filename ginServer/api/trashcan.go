@@ -494,6 +494,38 @@ func UpdateTrashCan(c *gin.Context) {
 	common.OkWithDetailed(result, "更新成功", c)
 }
 
+// UploadImage 上传单张图片
+// POST /api/upload/image
+func UploadImage(c *gin.Context) {
+	file, err := c.FormFile("image")
+	if err != nil {
+		common.FailWithMessage("请选择图片", c)
+		return
+	}
+
+	uploadDir := global.CONFIG.UploadConfig.ImageDir
+	if uploadDir == "" {
+		uploadDir = "uploads/trashcans"
+	}
+
+	if err := utils.EnsureUploadDir(uploadDir); err != nil {
+		global.SugarLogger.Errorf("创建上传目录失败: %v", err)
+		common.FailWithMessage("创建上传目录失败", c)
+		return
+	}
+
+	imagePath, err := utils.SaveImage(file, uploadDir)
+	if err != nil {
+		global.SugarLogger.Errorf("保存图片失败: %v", err)
+		common.FailWithMessage("保存图片失败: "+err.Error(), c)
+		return
+	}
+
+	common.OkWithData(map[string]string{
+		"image_path": imagePath,
+	}, c)
+}
+
 // DeleteTrashCan 删除垃圾桶
 // DELETE /api/trashcans/:id
 func DeleteTrashCan(c *gin.Context) {

@@ -45,6 +45,7 @@ func InitRouter() {
 			trashCanAuthGroup.DELETE("/trashcans/:id", api.DeleteTrashCan)
 			trashCanAuthGroup.POST("/trashcans/:id/like", api.ToggleLike)
 			trashCanAuthGroup.POST("/trashcans/:id/dislike", api.ToggleDislike)
+			trashCanAuthGroup.POST("/upload/image", api.UploadImage)
 		}
 	}
 

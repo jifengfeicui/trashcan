@@ -1,5 +1,5 @@
 const { getCurrentUser, updateCurrentUser } = require("../../utils/api/user")
-const { getUserTrashCans, deleteTrashCan, updateTrashCan } = require("../../utils/api/trashcan")
+const { getUserTrashCans, deleteTrashCan, updateTrashCan, uploadImage } = require("../../utils/api/trashcan")
 const { resolveImageURL } = require("../../utils/request")
 const { isAuthenticated, clearAuth } = require("../../utils/auth")
 
@@ -317,8 +317,6 @@ Page({
     if (!editingItem) return
 
     const that = this
-    const token = wx.getStorageSync('token')
-    const uploadUrl = `${getApp().globalData?.API_ORIGIN || 'https://rss.jjfc.abrdns.com:38081'}/api/trashcans/${editingItem}`
 
     const doUpdate = (newImages) => {
       const data = {
@@ -359,42 +357,21 @@ Page({
     }
 
     this.setData({ loadingList: true })
-    const uploadedPaths = ['', '', '']
-    let completed = 0
 
-    tempImages.forEach((filePath, index) => {
-      wx.uploadFile({
-        url: uploadUrl,
-        filePath: filePath,
-        name: `images[${index}]`,
-        header: { 'Authorization': `Bearer ${token}` },
-        formData: index === 0 ? { address: editItemForm.address, description: editItemForm.description } : {},
-        success: (res) => {
-          if (res.statusCode === 200) {
-            try {
-              const json = JSON.parse(res.data)
-              if (json.code === 0 && json.data) {
-                uploadedPaths[index] = json.data.image_path || ''
-              }
-            } catch (e) {}
-          }
-          completed++
-          if (completed >= tempImages.length) {
-            const finalImages = editItemImages.map(img => {
-              if (img.startsWith('http') || img.startsWith('/')) return img
-              const idx = tempImages.indexOf(img)
-              return uploadedPaths[idx] || img
-            })
-            doUpdate(finalImages)
-          }
-        },
-        fail: () => {
-          completed++
-          if (completed >= tempImages.length) {
-            doUpdate(editItemImages)
-          }
-        }
+    const uploadPromises = tempImages.map(path => uploadImage(path))
+    
+    Promise.all(uploadPromises)
+      .then(uploadedPaths => {
+        const finalImages = editItemImages.map(img => {
+          if (img.startsWith('http') || img.startsWith('/')) return img
+          const idx = tempImages.indexOf(img)
+          return uploadedPaths[idx] || img
+        })
+        doUpdate(finalImages)
       })
-    })
+      .catch(err => {
+        wx.showToast({ title: err.message || "上传图片失败", icon: "none" })
+        this.setData({ loadingList: false })
+      })
   }
 })
