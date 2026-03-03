@@ -73,18 +73,26 @@ function createTrashCanWithImages(formData, imagePaths) {
       return
     }
 
-    const uploadPromises = imagePaths.map(path => uploadImage(path))
+    const uploadPromises = imagePaths.map(path => 
+      uploadImage(path).catch(err => {
+        console.error('单图上传失败:', err)
+        return ''
+      })
+    )
     
     Promise.all(uploadPromises)
       .then(imagePathsResult => {
+        console.log('上传结果:', imagePathsResult)
         const data = { ...formData }
         if (imagePathsResult[0]) data.image = imagePathsResult[0]
         if (imagePathsResult[1]) data.image_2 = imagePathsResult[1]
         if (imagePathsResult[2]) data.image_3 = imagePathsResult[2]
 
+        console.log('创建数据:', data)
         createTrashCan(data).then(resolve).catch(reject)
       })
       .catch(err => {
+        console.error('上传流程失败:', err)
         reject(err)
       })
   })
