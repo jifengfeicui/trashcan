@@ -430,39 +430,44 @@ func UpdateTrashCan(c *gin.Context) {
 		"description": description,
 	}
 
-	// 处理图片上传（如果提供了新图片）
-	file, err := c.FormFile("image")
-	if err == nil {
-		// 有图片上传，先删除旧图片
-		if trashCan.ImagePath != "" {
-			if err := os.Remove(trashCan.ImagePath); err != nil {
-				global.SugarLogger.Warnf("删除旧图片失败: %v", err)
-				// 继续执行，不中断流程
-			}
+	// 处理多图上传
+	uploadDir := global.CONFIG.UploadConfig.ImageDir
+	if uploadDir == "" {
+		uploadDir = "uploads/trashcans"
+	}
+
+	if err := utils.EnsureUploadDir(uploadDir); err != nil {
+		global.SugarLogger.Errorf("创建上传目录失败: %v", err)
+		common.FailWithMessage("创建上传目录失败", c)
+		return
+	}
+
+	// 支持多图上传 images[0], images[1], images[2]
+	for i := 0; i < 3; i++ {
+		key := "images"
+		if i > 0 {
+			key = fmt.Sprintf("images[%d]", i)
+		}
+		file, err := c.FormFile(key)
+		if err != nil {
+			continue
 		}
 
-		// 保存新图片
-		uploadDir := global.CONFIG.UploadConfig.ImageDir
-		if uploadDir == "" {
-			uploadDir = "uploads/trashcans"
-		}
-
-		// 确保上传目录存在
-		if err := utils.EnsureUploadDir(uploadDir); err != nil {
-			global.SugarLogger.Errorf("创建上传目录失败: %v", err)
-			common.FailWithMessage("创建上传目录失败", c)
-			return
-		}
-
-		// 保存图片
-		imagePath, err := utils.SaveImage(file, uploadDir)
+		path, err := utils.SaveImage(file, uploadDir)
 		if err != nil {
 			global.SugarLogger.Errorf("保存图片失败: %v", err)
 			common.FailWithMessage("保存图片失败: "+err.Error(), c)
 			return
 		}
 
-		updates["image_path"] = imagePath
+		switch i {
+		case 0:
+			updates["image_path"] = path
+		case 1:
+			updates["image_path_2"] = path
+		case 2:
+			updates["image_path_3"] = path
+		}
 	}
 
 	// 更新数据库
