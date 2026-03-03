@@ -27,85 +27,69 @@ function createTrashCanWithImages(formData, imagePaths) {
       return
     }
 
-    const uploadDir = `${wx.env.HTTP_BASE}/api/trashcans`
-    const header = {
-      'Authorization': `Bearer ${token}`
-    }
+    const apiBase = wx.env.HTTP_BASE || ''
+    const uploadUrl = `${apiBase}/api/trashcans`
 
-    let uploadedCount = 0
-    const uploadedPaths = []
+    let uploadedPaths = []
+    let currentIndex = 0
 
-    if (imagePaths.length === 0) {
-      wx.request({
-        url: uploadDir,
-        method: 'POST',
-        header,
-        data: formData,
-        success: (res) => {
-          if (res.data.code === 0) {
-            resolve(res.data)
-          } else {
-            reject({ message: res.data.msg || '上传失败' })
-          }
-        },
-        fail: reject
-      })
-      return
-    }
+    const uploadNext = () => {
+      if (currentIndex >= imagePaths.length) {
+        const data = { ...formData }
+        if (uploadedPaths[0]) data.image = uploadedPaths[0]
+        if (uploadedPaths[1]) data.image_2 = uploadedPaths[1]
+        if (uploadedPaths[2]) data.image_3 = uploadedPaths[2]
 
-    const uploadNext = (index) => {
-      if (index >= imagePaths.length) {
-        formData.images = uploadedPaths
         wx.request({
-          url: uploadDir,
+          url: uploadUrl,
           method: 'POST',
-          header,
-          data: formData,
+          header: {
+            'Authorization': `Bearer ${token}`,
+            'content-type': 'application/x-www-form-urlencoded'
+          },
+          data,
           success: (res) => {
-            if (res.data.code === 0) {
+            if (res.data && res.data.code === 0) {
               resolve(res.data)
             } else {
-              reject({ message: res.data.msg || '上传失败' })
+              reject({ message: res.data?.msg || '创建失败' })
             }
           },
-          fail: reject
+          fail: (err) => {
+            reject({ message: err.errMsg || '请求失败' })
+          }
         })
         return
       }
 
       wx.uploadFile({
-        url: uploadDir,
-        filePath: imagePaths[index],
-        name: `images[${index}]`,
-        header,
-        formData: index === 0 ? formData : {},
+        url: uploadUrl,
+        filePath: imagePaths[currentIndex],
+        name: `images[${currentIndex}]`,
+        header: {
+          'Authorization': `Bearer ${token}`
+        },
+        formData: currentIndex === 0 ? formData : {},
         success: (res) => {
-          try {
-            const data = JSON.parse(res.data)
-            if (data.code === 0) {
-              uploadedPaths.push(data.data.image_path || '')
-              uploadedCount++
-              uploadNext(index + 1)
-            } else {
-              reject({ message: data.msg || '上传失败' })
-            }
-          } catch (e) {
-            if (res.statusCode === 200) {
-              uploadedPaths.push('')
-              uploadedCount++
-              uploadNext(index + 1)
-            } else {
-              reject({ message: '上传失败' })
-            }
+          if (res.statusCode === 200) {
+            try {
+              const data = JSON.parse(res.data)
+              if (data.code === 0 && data.data && data.data.image_path) {
+                uploadedPaths.push(data.data.image_path)
+              }
+            } catch (e) {}
           }
+          currentIndex++
+          uploadNext()
         },
         fail: (err) => {
-          reject(err)
+          currentIndex++
+          uploadNext()
         }
       })
     }
 
-    uploadNext(0)
+    uploadNext()
   })
 }
 

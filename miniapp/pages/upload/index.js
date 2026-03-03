@@ -1,4 +1,4 @@
-const { createTrashCanWithImages } = require("../../utils/api/trashcan")
+const { createTrashCan, createTrashCanWithImages } = require("../../utils/api/trashcan")
 const { getAddressByLocation } = require("../../utils/geocoder")
 const { isAuthenticated } = require("../../utils/auth")
 
