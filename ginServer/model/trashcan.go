@@ -5,8 +5,10 @@ import "time"
 // TrashCan 垃圾桶模型
 type TrashCan struct {
 	ID          uint      `json:"id" gorm:"primaryKey;AUTO_INCREMENT"`
-	UserID      *uint     `json:"user_id" gorm:"index"`       // 可为NULL以兼容现有数据
-	User        *User     `json:"-" gorm:"foreignKey:UserID"` // 关联用户
+	UserID      *uint     `json:"user_id" gorm:"index"`        // 可为NULL以兼容现有数据
+	User        *User     `json:"-" gorm:"foreignKey:UserID"`  // 关联用户
+	TagID       *uint     `json:"tag_id" gorm:"index"`         // 关联标签
+	Tag         *Tag      `json:"tag" gorm:"foreignKey:TagID"` // 预加载标签
 	Latitude    float64   `json:"latitude" gorm:"type:REAL;not null"`
 	Longitude   float64   `json:"longitude" gorm:"type:REAL;not null"`
 	Address     string    `json:"address" gorm:"type:TEXT"`

@@ -3,7 +3,8 @@
     "pages/home/index",
     "pages/upload/index",
     "pages/profile/index",
-    "pages/login/index"
+    "pages/login/index",
+    "pages/admin/index"
   ],
   "window": {
     "navigationBarTitleText": "垃圾桶定位",

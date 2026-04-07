@@ -20,6 +20,12 @@
         <text class="label">数量</text>
         <input class="input small-input" type="number" value="{{limit}}" bindinput="handleLimitInput" />
       </view>
+      <view class="filter-item full-width">
+        <text class="label">标签筛选</text>
+        <picker mode="selector" range="{{tagOptions}}" bindchange="onTagChange" value="{{selectedTagIndex}}">
+          <view class="picker-box">{{tagOptions[selectedTagIndex] || '选择标签'}}</view>
+        </picker>
+      </view>
     </view>
 
     <view class="actions">
@@ -51,6 +57,10 @@
         </view>
 
         <text class="trash-desc" wx:if="{{item.description}}">{{item.description}}</text>
+
+        <view class="trash-tags" wx:if="{{item.tag_name}}">
+          <text class="tag">{{item.tag_name}}</text>
+        </view>
 
         <view class="trash-images" wx:if="{{item.image_urls.length > 0}}">
           <swiper class="image-swiper" indicator-dots="{{item.image_urls.length > 1}}" autoplay="{{false}}" circular>
@@ -84,6 +94,10 @@
   </view>
 
   <view class="card empty-card" wx:if="{{!loading && trashCans.length === 0}}">
-    <text class="text-muted">暂无搜索结果，先点击“定位我”再搜索。</text>
+    <text class="text-muted">暂无搜索结果，先点击"定位我"再搜索。</text>
+  </view>
+
+  <view class="version-bar" wx:if="{{version}}">
+    <text class="version-text">v{{version}}</text>
   </view>
 </view>

@@ -139,6 +139,33 @@
   font-size: 24rpx;
 }
 
+.picker-box {
+  min-height: 84rpx;
+  line-height: 84rpx;
+  padding: 0 20rpx;
+  border-radius: 14rpx;
+  border: 1px solid #d8c2a2;
+  background: #fffdf8;
+  box-sizing: border-box;
+  color: #2e2018;
+  font-size: 30rpx;
+}
+
+.trash-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8rpx;
+  margin-top: 8rpx;
+}
+
+.tag {
+  padding: 4rpx 12rpx;
+  background: #e8f5e9;
+  color: #2F6A4F;
+  border-radius: 12rpx;
+  font-size: 22rpx;
+}
+
 .trash-images {
   margin-top: 12rpx;
 }
@@ -168,5 +195,15 @@
 
 .empty-card {
   text-align: center;
+  color: #8d654a;
+}
+
+.version-bar {
+  text-align: center;
+  padding: 20rpx;
+}
+
+.version-text {
+  font-size: 22rpx;
   color: #8d654a;
 }

@@ -45,8 +45,8 @@ func JWTAuth() gin.HandlerFunc {
 		// 将用户信息存入context
 		c.Set("userID", claims.UserID)
 		c.Set("username", claims.Username)
+		c.Set("isAdmin", claims.IsAdmin)
 
 		c.Next()
 	}
 }
-

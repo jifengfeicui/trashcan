@@ -72,7 +72,7 @@ func Register(c *gin.Context) {
 	}
 
 	// 生成token
-	token, err := utils.GenerateToken(user.ID, user.Username)
+	token, err := utils.GenerateToken(user.ID, user.Username, user.IsAdmin)
 	if err != nil {
 		global.SugarLogger.Errorf("生成token失败: %v", err)
 		common.FailWithMessage("注册成功，但登录失败", c)
@@ -84,6 +84,7 @@ func Register(c *gin.Context) {
 		"user": map[string]interface{}{
 			"id":       user.ID,
 			"username": user.Username,
+			"is_admin": user.IsAdmin,
 		},
 	}
 
@@ -113,7 +114,7 @@ func Login(c *gin.Context) {
 	}
 
 	// 生成token
-	token, err := utils.GenerateToken(user.ID, user.Username)
+	token, err := utils.GenerateToken(user.ID, user.Username, user.IsAdmin)
 	if err != nil {
 		global.SugarLogger.Errorf("生成token失败: %v", err)
 		common.FailWithMessage("登录失败", c)
@@ -125,6 +126,7 @@ func Login(c *gin.Context) {
 		"user": map[string]interface{}{
 			"id":       user.ID,
 			"username": user.Username,
+			"is_admin": user.IsAdmin,
 		},
 	}
 
@@ -152,6 +154,7 @@ func GetCurrentUser(c *gin.Context) {
 		"username":   user.Username,
 		"nickname":   user.Nickname,
 		"avatar":     user.Avatar,
+		"is_admin":   user.IsAdmin,
 		"created_at": user.CreatedAt,
 	}
 
@@ -272,7 +275,7 @@ func WechatLogin(c *gin.Context) {
 		global.DB.First(&user, user.ID)
 	}
 
-	token, err := utils.GenerateToken(user.ID, user.Username)
+	token, err := utils.GenerateToken(user.ID, user.Username, user.IsAdmin)
 	if err != nil {
 		global.SugarLogger.Errorf("生成 token 失败: %v", err)
 		common.FailWithMessage("登录失败", c)
@@ -286,6 +289,7 @@ func WechatLogin(c *gin.Context) {
 			"username": user.Username,
 			"nickname": user.Nickname,
 			"avatar":   user.Avatar,
+			"is_admin": user.IsAdmin,
 		},
 		"is_new": isNewUser,
 	}

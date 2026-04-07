@@ -56,6 +56,9 @@
         <text class="label">注册时间</text>
         <text class="value">{{userInfo.created_at}}</text>
       </view>
+      <view class="admin-entry" wx:if="{{userInfo.is_admin}}" bindtap="goAdmin">
+        <text class="admin-text">进入管理后台</text>
+      </view>
       <button class="btn-danger" bindtap="logout" wx:if="{{!editing}}">退出登录</button>
     </view>
 

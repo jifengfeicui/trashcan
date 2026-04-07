@@ -1,4 +1,4 @@
-const { createTrashCan, createTrashCanWithImages } = require("../../utils/api/trashcan")
+const { createTrashCan, createTrashCanWithImages, getAllTags, createAdminTag } = require("../../utils/api/trashcan")
 const { getAddressByLocation } = require("../../utils/geocoder")
 const { isAuthenticated } = require("../../utils/auth")
 
@@ -15,13 +15,67 @@ Page({
       longitude: "",
       address: "",
       description: ""
-    }
+    },
+    allTags: [],
+    tagOptions: ['无'],
+    selectedTagIndex: 0
   },
 
   onShow() {
     if (!isAuthenticated()) {
       this.goLogin()
     }
+    this.loadTags()
+  },
+
+  loadTags() {
+    getAllTags()
+      .then((res) => {
+        const tags = res.data || []
+        const tagOptions = ['无', ...tags.map(t => t.name)]
+        this.setData({
+          allTags: tags,
+          tagOptions: tagOptions
+        })
+      })
+      .catch(() => {})
+  },
+
+  onTagChange(e) {
+    const index = Number(e.detail.value)
+    this.setData({ selectedTagIndex: index })
+  },
+
+  addNewTag() {
+    wx.showModal({
+      title: '新增标签',
+      placeholderText: '请输入标签名',
+      editable: true,
+      success: (res) => {
+        if (res.confirm && res.content && res.content.trim()) {
+          const newTagName = res.content.trim()
+          wx.showLoading({ title: '创建中...' })
+          createAdminTag(newTagName)
+            .then(() => {
+              wx.showToast({ title: '创建成功', icon: 'success' })
+              return this.loadTags()
+            })
+            .then(() => {
+              const { allTags } = this.data
+              const idx = allTags.findIndex(t => t.name === newTagName)
+              if (idx >= 0) {
+                this.setData({ selectedTagIndex: idx + 1 })
+              }
+            })
+            .catch((err) => {
+              wx.showToast({ title: err.message || '创建失败', icon: 'none' })
+            })
+            .finally(() => {
+              wx.hideLoading()
+            })
+        }
+      }
+    })
   },
 
   onModeChange(e) {
@@ -168,6 +222,7 @@ Page({
   submit() {
     const that = this
     const token = wx.getStorageSync('token')
+    console.log('token:', token)
     if (!token) {
       wx.showModal({
         title: "需要登录",
@@ -183,7 +238,7 @@ Page({
       return
     }
 
-    const { form, imagePaths } = this.data
+    const { form, imagePaths, selectedTagIndex, allTags } = this.data
     const latitude = Number(form.latitude)
     const longitude = Number(form.longitude)
 
@@ -195,14 +250,22 @@ Page({
       return
     }
 
+    let tagId = ''
+    if (selectedTagIndex > 0) {
+      tagId = allTags[selectedTagIndex - 1]?.id || ''
+    }
+
     const payload = {
       latitude: String(latitude),
       longitude: String(longitude),
       address: form.address || "",
-      description: form.description || ""
+      description: form.description || "",
+      tag_id: tagId
     }
 
     this.setData({ submitting: true })
+
+    console.log('going to upload, imagePaths.length:', imagePaths.length)
 
     if (imagePaths.length > 0) {
       createTrashCanWithImages(payload, imagePaths)
@@ -256,7 +319,8 @@ Page({
         latitude: "",
         longitude: "",
         address: "",
-        description: ""
+        description: "",
+        tags: ""
       }
     })
   },

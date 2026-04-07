@@ -115,6 +115,27 @@
   color: #90725b;
 }
 
+.tag-row {
+  display: flex;
+  gap: 16rpx;
+  align-items: center;
+}
+
+.tag-picker {
+  flex: 1;
+}
+
+.picker-box {
+  min-height: 84rpx;
+  line-height: 84rpx;
+  padding: 0 20rpx;
+  border-radius: 14rpx;
+  border: 1px solid #d8c2a2;
+  background: #fffdf8;
+  color: #2e2018;
+  font-size: 30rpx;
+}
+
 .upload-box {
   border: 2rpx dashed #d8c2a2;
   border-radius: 16rpx;

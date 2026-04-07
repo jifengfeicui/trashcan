@@ -1,4 +1,4 @@
-const { getNearbyTrashCans, toggleLike, toggleDislike } = require("../../utils/api/trashcan")
+const { getNearbyTrashCans, toggleLike, toggleDislike, getAllTags } = require("../../utils/api/trashcan")
 const { resolveImageURL } = require("../../utils/request")
 const { isAuthenticated } = require("../../utils/auth")
 
@@ -14,12 +14,41 @@ Page({
     authed: false,
     userLocation: null,
     trashCans: [],
-    markers: []
+    markers: [],
+    version: "",
+    allTags: [],
+    tagOptions: ['全部'],
+    selectedTagIndex: 0
   },
 
   onLoad() {
     this.setData({ authed: isAuthenticated() })
+    this.loadVersion()
+    this.loadTags()
     this.locateMe(false).catch(() => {})
+  },
+
+  loadVersion() {
+    this.setData({ version: "0.0.6" })
+  },
+
+  loadTags() {
+    getAllTags()
+      .then((res) => {
+        const tags = res.data || []
+        const tagOptions = ['全部', ...tags.map(t => t.name)]
+        this.setData({
+          allTags: tags,
+          tagOptions: tagOptions
+        })
+      })
+      .catch(() => {})
+  },
+
+  onTagChange(e) {
+    const index = Number(e.detail.value)
+    this.setData({ selectedTagIndex: index })
+    this.searchNearby()
   },
 
   onShow() {
@@ -45,6 +74,16 @@ Page({
   handleLimitInput(e) {
     const value = Number(e.detail.value || 10)
     this.setData({ limit: value > 0 ? value : 10 })
+  },
+
+  handleInput(e) {
+    const field = e.currentTarget.dataset.field
+    if (!field) {
+      return
+    }
+    this.setData({
+      [field]: e.detail.value
+    })
   },
 
   locateMe(showToast = true) {
@@ -89,7 +128,12 @@ Page({
   },
 
   searchNearby() {
-    const { userLocation, radius, limit } = this.data
+    const { userLocation, radius, limit, selectedTagIndex, allTags } = this.data
+
+    let tagId = ''
+    if (selectedTagIndex > 0) {
+      tagId = allTags[selectedTagIndex - 1]?.id || ''
+    }
 
     if (!userLocation) {
       wx.showToast({
@@ -105,7 +149,8 @@ Page({
       userLocation.latitude,
       userLocation.longitude,
       radius,
-      limit
+      limit,
+      tagId
     )
       .then((res) => {
         const list = (res.data || []).map((item) => ({

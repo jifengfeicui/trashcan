@@ -184,6 +184,12 @@ Page({
     })
   },
 
+  goAdmin() {
+    wx.navigateTo({
+      url: "/pages/admin/index"
+    })
+  },
+
   startEdit() {
     const { userInfo } = this.data
     this.setData({

@@ -75,6 +75,16 @@
     </view>
 
     <view class="form-row">
+      <text class="label">标签</text>
+      <view class="tag-row">
+        <picker class="tag-picker" mode="selector" range="{{tagOptions}}" bindchange="onTagChange" value="{{selectedTagIndex}}">
+          <view class="picker-box">{{tagOptions[selectedTagIndex]}}</view>
+        </picker>
+        <button size="mini" class="btn-secondary" bindtap="addNewTag">新增</button>
+      </view>
+    </view>
+
+    <view class="form-row">
       <text class="label">上传图片（可选，最多3张）</text>
       <view class="images-grid" wx:if="{{imagePaths.length > 0}}">
         <block wx:for="{{imagePaths}}" wx:key="index">

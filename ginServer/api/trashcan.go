@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -14,15 +15,14 @@ import (
 )
 
 // GetNearbyTrashCans 获取附近的垃圾桶
-// GET /api/trashcans/nearby?lat=39.9&lng=116.4&radius=5&limit=10
+// GET /api/trashcans/nearby?lat=39.9&lng=116.4&radius=5&limit=10&tag_id=1
 func GetNearbyTrashCans(c *gin.Context) {
-	// 获取查询参数
 	latStr := c.Query("lat")
 	lngStr := c.Query("lng")
-	radiusStr := c.DefaultQuery("radius", "5") // 默认搜索半径5公里
-	limitStr := c.DefaultQuery("limit", "10")  // 默认返回10个
+	radiusStr := c.DefaultQuery("radius", "5")
+	limitStr := c.DefaultQuery("limit", "10")
+	tagIDStr := c.Query("tag_id")
 
-	// 解析参数
 	lat, err := strconv.ParseFloat(latStr, 64)
 	if err != nil {
 		common.ParamError(c)
@@ -38,21 +38,31 @@ func GetNearbyTrashCans(c *gin.Context) {
 	radius, _ := strconv.ParseFloat(radiusStr, 64)
 	limit, _ := strconv.Atoi(limitStr)
 
-	// 查询所有垃圾桶，预加载用户信息
+	var tagID *uint
+	if tagIDStr != "" {
+		if id, err := strconv.ParseUint(tagIDStr, 10, 32); err == nil {
+			uid := uint(id)
+			tagID = &uid
+		}
+	}
+
+	query := global.DB.Preload("User").Preload("Tag").Model(&model.TrashCan{})
+	if tagID != nil {
+		query = query.Where("tag_id = ?", *tagID)
+	}
+
 	var trashCans []model.TrashCan
-	if err := global.DB.Preload("User").Find(&trashCans).Error; err != nil {
+	if err := query.Find(&trashCans).Error; err != nil {
 		global.SugarLogger.Errorf("查询垃圾桶失败: %v", err)
 		common.FailWithMessage("查询失败", c)
 		return
 	}
 
-	// 获取所有垃圾桶的ID列表
 	var trashCanIDs []uint
 	for _, tc := range trashCans {
 		trashCanIDs = append(trashCanIDs, tc.ID)
 	}
 
-	// 统计每个垃圾桶的点赞和点踩数量
 	likeCounts := make(map[uint]int64)
 	dislikeCounts := make(map[uint]int64)
 	if len(trashCanIDs) > 0 {
@@ -83,44 +93,52 @@ func GetNearbyTrashCans(c *gin.Context) {
 		}
 	}
 
-	// 计算距离并筛选
 	type TrashCanWithDistance struct {
 		model.TrashCan
-		Distance       float64 `json:"distance"`        // 距离（公里）
-		ImageURL       string  `json:"image_url"`       // 图片URL
-		ImageURL2      string  `json:"image_url_2"`     // 图片2 URL
-		ImageURL3      string  `json:"image_url_3"`     // 图片3 URL
-		LikeCount      int64   `json:"like_count"`      // 点赞数
-		DislikeCount   int64   `json:"dislike_count"`   // 点踩数
-		UploaderName   string  `json:"uploader_name"`   // 上传者昵称
-		UploaderAvatar string  `json:"uploader_avatar"` // 上传者头像
+		Distance       float64 `json:"distance"`
+		ImageURL       string  `json:"image_url"`
+		ImageURL2      string  `json:"image_url_2"`
+		ImageURL3      string  `json:"image_url_3"`
+		LikeCount      int64   `json:"like_count"`
+		DislikeCount   int64   `json:"dislike_count"`
+		UploaderName   string  `json:"uploader_name"`
+		UploaderAvatar string  `json:"uploader_avatar"`
+		TagName        string  `json:"tag_name"`
 	}
 
 	var results []TrashCanWithDistance
 	for _, tc := range trashCans {
 		distance := utils.CalculateDistance(lat, lng, tc.Latitude, tc.Longitude)
-		if distance <= radius {
-			uploaderName := ""
-			uploaderAvatar := ""
-			if tc.User != nil {
-				uploaderName = tc.User.Nickname
-				uploaderAvatar = tc.User.Avatar
-			}
-			results = append(results, TrashCanWithDistance{
-				TrashCan:       tc,
-				Distance:       distance,
-				ImageURL:       utils.GetImageURL(tc.ImagePath),
-				ImageURL2:      utils.GetImageURL(tc.ImagePath2),
-				ImageURL3:      utils.GetImageURL(tc.ImagePath3),
-				LikeCount:      likeCounts[tc.ID],
-				DislikeCount:   dislikeCounts[tc.ID],
-				UploaderName:   uploaderName,
-				UploaderAvatar: uploaderAvatar,
-			})
+		if distance > radius {
+			continue
 		}
+
+		uploaderName := ""
+		uploaderAvatar := ""
+		if tc.User != nil {
+			uploaderName = tc.User.Nickname
+			uploaderAvatar = tc.User.Avatar
+		}
+
+		tagName := ""
+		if tc.Tag != nil {
+			tagName = tc.Tag.Name
+		}
+
+		results = append(results, TrashCanWithDistance{
+			TrashCan:       tc,
+			Distance:       distance,
+			ImageURL:       utils.GetImageURL(tc.ImagePath),
+			ImageURL2:      utils.GetImageURL(tc.ImagePath2),
+			ImageURL3:      utils.GetImageURL(tc.ImagePath3),
+			LikeCount:      likeCounts[tc.ID],
+			DislikeCount:   dislikeCounts[tc.ID],
+			UploaderName:   uploaderName,
+			UploaderAvatar: uploaderAvatar,
+			TagName:        tagName,
+		})
 	}
 
-	// 按距离排序（冒泡排序，简单实现）
 	for i := 0; i < len(results)-1; i++ {
 		for j := 0; j < len(results)-i-1; j++ {
 			if results[j].Distance > results[j+1].Distance {
@@ -129,7 +147,6 @@ func GetNearbyTrashCans(c *gin.Context) {
 		}
 	}
 
-	// 限制返回数量
 	if len(results) > limit {
 		results = results[:limit]
 	}
@@ -140,13 +157,12 @@ func GetNearbyTrashCans(c *gin.Context) {
 // CreateTrashCan 创建新垃圾桶
 // POST /api/trashcans
 func CreateTrashCan(c *gin.Context) {
-	// 解析表单数据
 	latStr := c.PostForm("latitude")
 	lngStr := c.PostForm("longitude")
 	address := c.PostForm("address")
 	description := c.PostForm("description")
+	tagIDStr := c.PostForm("tag_id")
 
-	// 验证必填参数
 	if latStr == "" || lngStr == "" {
 		common.ParamError(c)
 		return
@@ -164,7 +180,14 @@ func CreateTrashCan(c *gin.Context) {
 		return
 	}
 
-	// 处理图片上传
+	var tagID *uint
+	if tagIDStr != "" {
+		if id, err := strconv.ParseUint(tagIDStr, 10, 32); err == nil {
+			uid := uint(id)
+			tagID = &uid
+		}
+	}
+
 	uploadDir := global.CONFIG.UploadConfig.ImageDir
 	if uploadDir == "" {
 		uploadDir = "uploads/trashcans"
@@ -178,8 +201,6 @@ func CreateTrashCan(c *gin.Context) {
 
 	var imagePath, imagePath2, imagePath3 string
 
-	// 支持前端上传的 image 字段，也支持 images[0], images[1], images[2]
-	// 先尝试读取 image 字段（前端 Upload.vue 使用）
 	if file, err := c.FormFile("image"); err == nil {
 		path, err := utils.SaveImage(file, uploadDir)
 		if err != nil {
@@ -189,13 +210,11 @@ func CreateTrashCan(c *gin.Context) {
 		}
 		imagePath = path
 	} else {
-		// 小程序可能传图片路径字符串（如 uploads/trashcans/xxx.png）
 		if imagePathStr := c.PostForm("image"); imagePathStr != "" {
 			imagePath = imagePathStr
 		}
 	}
 
-	// 支持 image_2, image_3 路径字符串
 	if imagePath2Str := c.PostForm("image_2"); imagePath2Str != "" {
 		imagePath2 = imagePath2Str
 	}
@@ -203,7 +222,6 @@ func CreateTrashCan(c *gin.Context) {
 		imagePath3 = imagePath3Str
 	}
 
-	// 支持多图上传 (images[0], images[1], images[2])
 	for i := 0; i < 3; i++ {
 		key := "images"
 		if i > 0 {
@@ -231,7 +249,6 @@ func CreateTrashCan(c *gin.Context) {
 		}
 	}
 
-	// 从中间件获取用户ID
 	userID, exists := c.Get("userID")
 	if !exists {
 		common.FailWithAuthority(c)
@@ -240,9 +257,9 @@ func CreateTrashCan(c *gin.Context) {
 
 	userIDUint := userID.(uint)
 
-	// 创建垃圾桶记录
 	trashCan := model.TrashCan{
 		UserID:      &userIDUint,
+		TagID:       tagID,
 		Latitude:    lat,
 		Longitude:   lng,
 		Address:     address,
@@ -282,12 +299,11 @@ func GetTrashCanDetail(c *gin.Context) {
 	}
 
 	var trashCan model.TrashCan
-	if err := global.DB.First(&trashCan, id).Error; err != nil {
+	if err := global.DB.Preload("Tag").First(&trashCan, id).Error; err != nil {
 		common.FailWithMessage("垃圾桶不存在", c)
 		return
 	}
 
-	// 统计点赞和点踩数量
 	var likeCount int64
 	var dislikeCount int64
 	global.DB.Model(&model.TrashCanLike{}).
@@ -297,8 +313,7 @@ func GetTrashCanDetail(c *gin.Context) {
 		Where("trash_can_id = ? AND type = ?", id, -1).
 		Count(&dislikeCount)
 
-	// 获取当前用户的操作状态（如果已登录）
-	var userAction int8 = 0 // 0=未操作, 1=点赞, -1=点踩
+	var userAction int8 = 0
 	userID, exists := c.Get("userID")
 	if exists {
 		var like model.TrashCanLike
@@ -307,17 +322,25 @@ func GetTrashCanDetail(c *gin.Context) {
 		}
 	}
 
-	// 构建返回数据
+	tagName := ""
+	tagID := uint(0)
+	if trashCan.Tag != nil {
+		tagName = trashCan.Tag.Name
+		tagID = trashCan.Tag.ID
+	}
+
 	result := map[string]interface{}{
 		"id":            trashCan.ID,
 		"latitude":      trashCan.Latitude,
 		"longitude":     trashCan.Longitude,
 		"address":       trashCan.Address,
 		"description":   trashCan.Description,
+		"tag_id":        tagID,
+		"tag_name":      tagName,
 		"image_url":     utils.GetImageURL(trashCan.ImagePath),
 		"like_count":    likeCount,
 		"dislike_count": dislikeCount,
-		"user_action":   userAction, // 当前用户的操作：0=未操作, 1=点赞, -1=点踩
+		"user_action":   userAction,
 		"created_at":    trashCan.CreatedAt,
 		"updated_at":    trashCan.UpdatedAt,
 	}
@@ -636,4 +659,328 @@ func DeleteTrashCan(c *gin.Context) {
 	}
 
 	common.OkWithMessage("删除成功", c)
+}
+
+// AdminGetAllTrashCans 获取所有垃圾桶（管理员）
+// GET /api/admin/trashcans?page=1&page_size=10&keyword=xxx
+func AdminGetAllTrashCans(c *gin.Context) {
+	isAdmin, _ := c.Get("isAdmin")
+	if !isAdmin.(bool) {
+		common.FailWithMessage("权限不足", c)
+		return
+	}
+
+	pageStr := c.DefaultQuery("page", "1")
+	pageSizeStr := c.DefaultQuery("page_size", "20")
+	keyword := c.Query("keyword")
+
+	page, _ := strconv.Atoi(pageStr)
+	pageSize, _ := strconv.Atoi(pageSizeStr)
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = 20
+	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
+
+	query := global.DB.Preload("User").Preload("Tag").Model(&model.TrashCan{})
+
+	if keyword != "" {
+		query = query.Where("address LIKE ? OR description LIKE ?", "%"+keyword+"%", "%"+keyword+"%")
+	}
+
+	var total int64
+	query.Count(&total)
+
+	var trashCans []model.TrashCan
+	offset := (page - 1) * pageSize
+	query.Offset(offset).Limit(pageSize).Order("created_at DESC").Find(&trashCans)
+
+	type AdminTrashCanItem struct {
+		ID           uint    `json:"id"`
+		Latitude     float64 `json:"latitude"`
+		Longitude    float64 `json:"longitude"`
+		Address      string  `json:"address"`
+		Description  string  `json:"description"`
+		TagID        *uint   `json:"tag_id"`
+		TagName      string  `json:"tag_name"`
+		ImageURL     string  `json:"image_url"`
+		ImageURL2    string  `json:"image_url_2"`
+		ImageURL3    string  `json:"image_url_3"`
+		UserID       *uint   `json:"user_id"`
+		UploaderName string  `json:"uploader_name"`
+		CreatedAt    string  `json:"created_at"`
+		UpdatedAt    string  `json:"updated_at"`
+	}
+
+	var list []AdminTrashCanItem
+	for _, tc := range trashCans {
+		uploaderName := ""
+		if tc.User != nil {
+			uploaderName = tc.User.Nickname
+		}
+		tagName := ""
+		if tc.Tag != nil {
+			tagName = tc.Tag.Name
+		}
+		list = append(list, AdminTrashCanItem{
+			ID:           tc.ID,
+			Latitude:     tc.Latitude,
+			Longitude:    tc.Longitude,
+			Address:      tc.Address,
+			Description:  tc.Description,
+			TagID:        tc.TagID,
+			TagName:      tagName,
+			ImageURL:     utils.GetImageURL(tc.ImagePath),
+			ImageURL2:    utils.GetImageURL(tc.ImagePath2),
+			ImageURL3:    utils.GetImageURL(tc.ImagePath3),
+			UserID:       tc.UserID,
+			UploaderName: uploaderName,
+			CreatedAt:    tc.CreatedAt.Format("2006-01-02 15:04:05"),
+			UpdatedAt:    tc.UpdatedAt.Format("2006-01-02 15:04:05"),
+		})
+	}
+
+	totalPages := int((total + int64(pageSize) - 1) / int64(pageSize))
+	if totalPages < 1 {
+		totalPages = 1
+	}
+
+	common.OkWithData(map[string]interface{}{
+		"list":        list,
+		"total":       total,
+		"page":        page,
+		"page_size":   pageSize,
+		"total_pages": totalPages,
+	}, c)
+}
+
+// AdminUpdateTrashCan 更新垃圾桶（管理员）
+// PUT /api/admin/trashcans/:id
+func AdminUpdateTrashCan(c *gin.Context) {
+	isAdmin, _ := c.Get("isAdmin")
+	if !isAdmin.(bool) {
+		common.FailWithMessage("权限不足", c)
+		return
+	}
+
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		common.ParamError(c)
+		return
+	}
+
+	var trashCan model.TrashCan
+	if err := global.DB.First(&trashCan, id).Error; err != nil {
+		common.FailWithMessage("垃圾桶不存在", c)
+		return
+	}
+
+	address := c.PostForm("address")
+	description := c.PostForm("description")
+	tagIDStr := c.PostForm("tag_id")
+
+	updates := map[string]interface{}{}
+	if address != "" {
+		updates["address"] = address
+	}
+	if description != "" {
+		updates["description"] = description
+	}
+	if tagIDStr != "" {
+		if tagID, err := strconv.ParseUint(tagIDStr, 10, 32); err == nil {
+			if tagID == 0 {
+				updates["tag_id"] = nil
+			} else {
+				uid := uint(tagID)
+				updates["tag_id"] = &uid
+			}
+		}
+	}
+
+	if len(updates) > 0 {
+		if err := global.DB.Model(&trashCan).Updates(updates).Error; err != nil {
+			global.SugarLogger.Errorf("更新垃圾桶失败: %v", err)
+			common.FailWithMessage("更新失败", c)
+			return
+		}
+	}
+
+	global.DB.Preload("Tag").First(&trashCan, id)
+
+	tagName := ""
+	if trashCan.Tag != nil {
+		tagName = trashCan.Tag.Name
+	}
+
+	result := map[string]interface{}{
+		"id":          trashCan.ID,
+		"latitude":    trashCan.Latitude,
+		"longitude":   trashCan.Longitude,
+		"address":     trashCan.Address,
+		"description": trashCan.Description,
+		"tag_id":      trashCan.TagID,
+		"tag_name":    tagName,
+		"image_url":   utils.GetImageURL(trashCan.ImagePath),
+		"updated_at":  trashCan.UpdatedAt.Format("2006-01-02 15:04:05"),
+	}
+
+	common.OkWithDetailed(result, "更新成功", c)
+}
+
+// AdminDeleteTrashCan 删除垃圾桶（管理员）
+// DELETE /api/admin/trashcans/:id
+func AdminDeleteTrashCan(c *gin.Context) {
+	isAdmin, _ := c.Get("isAdmin")
+	if !isAdmin.(bool) {
+		common.FailWithMessage("权限不足", c)
+		return
+	}
+
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		common.ParamError(c)
+		return
+	}
+
+	var trashCan model.TrashCan
+	if err := global.DB.First(&trashCan, id).Error; err != nil {
+		common.FailWithMessage("垃圾桶不存在", c)
+		return
+	}
+
+	if trashCan.ImagePath != "" {
+		os.Remove(trashCan.ImagePath)
+	}
+
+	global.DB.Delete(&trashCan)
+	global.DB.Where("trash_can_id = ?", id).Delete(&model.TrashCanLike{})
+
+	common.OkWithMessage("删除成功", c)
+}
+
+func getAllTagsInternal() ([]model.Tag, error) {
+	var tags []model.Tag
+	if err := global.DB.Order("name").Find(&tags).Error; err != nil {
+		return nil, err
+	}
+	return tags, nil
+}
+
+// GetAllTags 获取所有标签
+// GET /api/tags
+func GetAllTags(c *gin.Context) {
+	tags, err := getAllTagsInternal()
+	if err != nil {
+		global.SugarLogger.Errorf("查询标签失败: %v", err)
+		common.FailWithMessage("查询失败", c)
+		return
+	}
+	common.OkWithData(tags, c)
+}
+
+// AdminGetTagsWithCount 获取所有标签及关联地点数量（管理员）
+// GET /api/admin/tags
+func AdminGetTagsWithCount(c *gin.Context) {
+	isAdmin, _ := c.Get("isAdmin")
+	if !isAdmin.(bool) {
+		common.FailWithMessage("权限不足", c)
+		return
+	}
+
+	var tags []model.Tag
+	if err := global.DB.Order("name").Find(&tags).Error; err != nil {
+		global.SugarLogger.Errorf("查询标签失败: %v", err)
+		common.FailWithMessage("查询失败", c)
+		return
+	}
+
+	type TagItem struct {
+		ID    uint   `json:"id"`
+		Name  string `json:"name"`
+		Count int64  `json:"count"`
+	}
+
+	var tagItems []TagItem
+	for _, tag := range tags {
+		var count int64
+		global.DB.Model(&model.TrashCan{}).Where("tag_id = ?", tag.ID).Count(&count)
+		tagItems = append(tagItems, TagItem{ID: tag.ID, Name: tag.Name, Count: count})
+	}
+
+	common.OkWithData(tagItems, c)
+}
+
+// AdminDeleteTag 删除指定标签（管理员）
+// DELETE /api/admin/tags?id=xxx
+func AdminDeleteTag(c *gin.Context) {
+	isAdmin, _ := c.Get("isAdmin")
+	if !isAdmin.(bool) {
+		common.FailWithMessage("权限不足", c)
+		return
+	}
+
+	tagIDStr := c.Query("id")
+	if tagIDStr == "" {
+		common.ParamError(c)
+		return
+	}
+
+	tagID, err := strconv.ParseUint(tagIDStr, 10, 32)
+	if err != nil {
+		common.ParamError(c)
+		return
+	}
+
+	var tag model.Tag
+	if err := global.DB.First(&tag, uint(tagID)).Error; err != nil {
+		common.FailWithMessage("标签不存在", c)
+		return
+	}
+
+	global.DB.Model(&model.TrashCan{}).Where("tag_id = ?", tagID).Update("tag_id", nil)
+
+	if err := global.DB.Delete(&tag).Error; err != nil {
+		global.SugarLogger.Errorf("删除标签失败: %v", err)
+		common.FailWithMessage("删除失败", c)
+		return
+	}
+
+	common.OkWithMessage("删除成功", c)
+}
+
+// AdminCreateTag 创建标签（管理员）
+// POST /api/admin/tags
+func AdminCreateTag(c *gin.Context) {
+	isAdmin, _ := c.Get("isAdmin")
+	if !isAdmin.(bool) {
+		common.FailWithMessage("权限不足", c)
+		return
+	}
+
+	name := strings.TrimSpace(c.PostForm("name"))
+	if name == "" {
+		common.ParamError(c)
+		return
+	}
+
+	var existing model.Tag
+	if err := global.DB.Where("name = ?", name).First(&existing).Error; err == nil {
+		common.FailWithMessage("标签已存在", c)
+		return
+	}
+
+	tag := model.Tag{Name: name}
+	if err := global.DB.Create(&tag).Error; err != nil {
+		global.SugarLogger.Errorf("创建标签失败: %v", err)
+		common.FailWithMessage("创建失败", c)
+		return
+	}
+
+	common.OkWithData(tag, c)
 }

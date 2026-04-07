@@ -35,6 +35,7 @@ func InitRouter() {
 		// 垃圾桶相关接口（公开）
 		v1.GET("/trashcans/nearby", api.GetNearbyTrashCans)
 		v1.GET("/trashcans/:id", api.GetTrashCanDetail)
+		v1.GET("/tags", api.GetAllTags)
 
 		// 垃圾桶相关接口（需要认证）
 		trashCanAuthGroup := v1.Group("")
@@ -46,6 +47,18 @@ func InitRouter() {
 			trashCanAuthGroup.POST("/trashcans/:id/like", api.ToggleLike)
 			trashCanAuthGroup.POST("/trashcans/:id/dislike", api.ToggleDislike)
 			trashCanAuthGroup.POST("/upload/image", api.UploadImage)
+		}
+
+		// 管理员接口
+		adminGroup := v1.Group("/admin")
+		adminGroup.Use(middle.JWTAuth())
+		{
+			adminGroup.GET("/trashcans", api.AdminGetAllTrashCans)
+			adminGroup.PUT("/trashcans/:id", api.AdminUpdateTrashCan)
+			adminGroup.DELETE("/trashcans/:id", api.AdminDeleteTrashCan)
+			adminGroup.GET("/tags", api.AdminGetTagsWithCount)
+			adminGroup.POST("/tags", api.AdminCreateTag)
+			adminGroup.DELETE("/tags", api.AdminDeleteTag)
 		}
 	}
 
