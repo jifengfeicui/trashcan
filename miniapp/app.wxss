@@ -1,45 +1,145 @@
+/* ========================
+   Design Token
+======================= */
+/* Colors */
 page {
-  background: #f4f7f5;
-  color: #1f2f24;
+  --bg: #edf2eb;
+  --bg-2: #f4f2eb;
+  --surface: rgba(255, 255, 255, 0.86);
+  --surface-strong: #fffdf8;
+  --text: #203124;
+  --text-soft: #5f705f;
+  --text-faint: #819082;
+  --primary: #2e6b4c;
+  --primary-strong: #234f3a;
+  --accent: #c67642;
+  --danger: #b44b43;
+  --success: #5f8f64;
+  --line: rgba(76, 105, 82, 0.14);
+  --line-strong: rgba(65, 92, 70, 0.22);
+
+  background: linear-gradient(180deg, #edf2eb 0%, #f4f2eb 56%, #eef1eb 100%);
+  color: var(--text);
   min-height: 100vh;
+  font-family: "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+}
+
+/* ========================
+   Base Components
+======================= */
+page,
+view,
+text,
+button,
+input,
+image,
+map {
+  box-sizing: border-box;
+}
+
+/* ========================
+   Card
+======================= */
+.card,
+.section-card {
+  background: var(--surface);
+  border: 1px solid rgba(255, 255, 255, 0.66);
+  border-radius: 22rpx;
+  padding: 22rpx;
+  box-shadow: 0 16rpx 34rpx rgba(44, 69, 49, 0.06);
+}
+
+/* ========================
+   Button System
+======================= */
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary) 0%, #3a7d5c 100%);
+  color: #ffffff;
+  box-shadow: 0 12rpx 24rpx rgba(46, 107, 76, 0.22);
+}
+
+.btn-secondary {
+  background: rgba(255, 247, 238, 0.84);
+  color: #8c5b34;
+  border: 1px solid rgba(72, 103, 79, 0.12);
+}
+
+.btn-danger {
+  background: rgba(180, 75, 67, 0.12);
+  color: var(--danger);
+}
+
+.btn-ghost {
+  background: transparent;
+}
+
+/* ========================
+   Form Inputs
+======================= */
+.input,
+.textarea,
+.picker-box,
+.select-box {
+  width: 100%;
+  border-radius: 18rpx;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.86);
+  color: var(--text);
+  padding: 14rpx 18rpx;
+  font-size: 28rpx;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.input-lg {
+  min-height: 84rpx;
+  height: 84rpx;
+  line-height: 84rpx;
+  padding: 0 20rpx;
+}
+
+.textarea {
+  min-height: 140rpx;
+  resize: none;
+}
+
+/* ========================
+   Utility
+======================= */
+.text-muted {
+  color: var(--text-faint);
 }
 
 .container {
   padding: 24rpx;
 }
 
-.card {
-  background: #ffffff;
-  border-radius: 16rpx;
-  padding: 20rpx;
-  margin-bottom: 20rpx;
-  box-shadow: 0 8rpx 20rpx rgba(17, 24, 39, 0.06);
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 8rpx 16rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  font-weight: 600;
+  background: rgba(46, 107, 76, 0.1);
+  color: var(--primary-strong);
+  border: 1px solid rgba(46, 107, 76, 0.12);
 }
 
-.btn-primary {
-  background: #2f6a4f;
-  color: #ffffff;
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 8rpx 16rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  font-weight: 600;
+  background: rgba(46, 107, 76, 0.1);
+  color: var(--primary-strong);
 }
 
-.btn-danger {
-  background: #cf3e3e;
-  color: #ffffff;
-}
-
-.btn-secondary {
-  background: #e8efe9;
-  color: #2f6a4f;
-}
-
-.text-muted {
-  color: #6b7280;
-}
-
-.input {
-  width: 100%;
-  border: 1px solid #d8e2dc;
-  border-radius: 10rpx;
-  padding: 18rpx;
-  box-sizing: border-box;
-  background: #ffffff;
+/* ========================
+   Page — disable tabBar offset
+======================= */
+page {
+  padding-bottom: 0;
 }

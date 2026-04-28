@@ -1,14 +1,7 @@
 .upload-page {
   min-height: 100vh;
-  padding-bottom: 30rpx;
-  background: linear-gradient(180deg, #f7f1e4 0%, #f2e6ce 56%, #efe2c9 100%);
-}
-
-.upload-page .card {
-  border-radius: 22rpx;
-  border: 1px solid #e3d2af;
-  background: #fffaf0;
-  box-shadow: 0 10rpx 24rpx rgba(88, 46, 32, 0.09);
+  padding: 18rpx 24rpx 180rpx;
+  background: linear-gradient(180deg, #edf2eb 0%, #f4f2eb 56%, #eef1eb 100%);
 }
 
 .nav-card {
@@ -16,6 +9,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 16rpx;
+  margin-bottom: 20rpx;
 }
 
 .nav-text {
@@ -25,36 +19,33 @@
 }
 
 .title {
-  font-size: 34rpx;
+  font-size: 38rpx;
   font-weight: 700;
-  color: #5a2a1f;
+  color: #203124;
   letter-spacing: 1rpx;
 }
 
 .subtitle {
-  font-size: 22rpx;
-  color: #8d654a;
+  font-size: 24rpx;
+  color: #5f705f;
 }
 
-.upload-page .btn-secondary {
-  background: #efe1c2;
-  color: #6f4030;
-  border: 1px solid #d9c29f;
-}
-
-.upload-page .btn-primary {
-  background: linear-gradient(135deg, #a23626 0%, #be5536 100%);
-  color: #ffffff;
-  box-shadow: 0 8rpx 18rpx rgba(162, 54, 38, 0.24);
+.form-card {
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(255, 255, 255, 0.66);
+  border-radius: 22rpx;
+  padding: 22rpx;
+  box-shadow: 0 16rpx 34rpx rgba(44, 69, 49, 0.06);
+  margin-bottom: 16rpx;
 }
 
 .form-row {
-  margin-bottom: 22rpx;
+  margin-bottom: 24rpx;
 }
 
 .label {
   font-size: 26rpx;
-  color: #634434;
+  color: #5f705f;
   display: block;
   margin-bottom: 10rpx;
   font-weight: 600;
@@ -62,27 +53,28 @@
 
 .mode-group {
   display: flex;
-  gap: 26rpx;
+  gap: 24rpx;
   flex-wrap: wrap;
 }
 
 .mode-item {
-  margin-right: 0;
-  color: #583f33;
+  color: #5f705f;
   font-size: 26rpx;
 }
 
 .actions {
   display: flex;
   gap: 14rpx;
-  margin-bottom: 18rpx;
+  margin-bottom: 20rpx;
 }
 
 .action-btn {
   flex: 1;
   min-height: 82rpx;
   line-height: 82rpx;
-  border-radius: 14rpx;
+  border-radius: 999rpx;
+  font-size: 28rpx;
+  font-weight: 600;
 }
 
 .input-lg {
@@ -90,29 +82,31 @@
   height: 84rpx;
   line-height: 84rpx;
   padding: 0 20rpx;
-  border-radius: 14rpx;
-  border: 1px solid #d8c2a2;
-  background: #fffdf8;
-  color: #2e2018;
-  font-size: 30rpx;
+  border-radius: 18rpx;
+  border: 1px solid rgba(76, 105, 82, 0.14);
+  background: rgba(255, 255, 255, 0.86);
+  color: #203124;
+  font-size: 28rpx;
   box-sizing: border-box;
 }
 
 .textarea {
   min-height: 140rpx;
-  border-radius: 14rpx;
-  border: 1px solid #d8c2a2;
-  background: #fffdf8;
-  color: #2e2018;
+  border-radius: 18rpx;
+  border: 1px solid rgba(76, 105, 82, 0.14);
+  background: rgba(255, 255, 255, 0.86);
+  color: #203124;
   padding: 18rpx;
+  font-size: 28rpx;
   box-sizing: border-box;
+  resize: none;
 }
 
 .hint {
   display: block;
   margin-top: 8rpx;
   font-size: 22rpx;
-  color: #90725b;
+  color: #819082;
 }
 
 .tag-row {
@@ -129,44 +123,22 @@
   min-height: 84rpx;
   line-height: 84rpx;
   padding: 0 20rpx;
-  border-radius: 14rpx;
-  border: 1px solid #d8c2a2;
-  background: #fffdf8;
-  color: #2e2018;
-  font-size: 30rpx;
+  border-radius: 18rpx;
+  border: 1px solid rgba(76, 105, 82, 0.14);
+  background: rgba(255, 255, 255, 0.86);
+  color: #203124;
+  font-size: 28rpx;
 }
 
 .upload-box {
-  border: 2rpx dashed #d8c2a2;
-  border-radius: 16rpx;
+  border: 2rpx dashed rgba(76, 105, 82, 0.22);
+  border-radius: 20rpx;
   height: 220rpx;
   display: flex;
   justify-content: center;
   align-items: center;
-  color: #7b5642;
-  background: #fff8ea;
-}
-
-.preview-box {
-  border: 1px solid #e3d2af;
-  border-radius: 16rpx;
-  overflow: hidden;
-  background: #fffdf7;
-}
-
-.preview {
-  width: 100%;
-  height: 280rpx;
-}
-
-.preview-actions {
-  display: flex;
-  gap: 10rpx;
-  padding: 12rpx;
-}
-
-.preview-actions button {
-  flex: 1;
+  color: #5f705f;
+  background: rgba(255, 255, 255, 0.6);
 }
 
 .images-grid {
@@ -184,7 +156,7 @@
 .image-item .preview {
   width: 100%;
   height: 100%;
-  border-radius: 12rpx;
+  border-radius: 16rpx;
 }
 
 .remove-btn {
@@ -193,7 +165,7 @@
   right: -10rpx;
   width: 40rpx;
   height: 40rpx;
-  background: #c93a3a;
+  background: #b44b43;
   color: #fff;
   border-radius: 50%;
   display: flex;
@@ -205,11 +177,12 @@
 .add-image-btn {
   width: 180rpx;
   height: 180rpx;
-  border: 2rpx dashed #d8c2a2;
-  border-radius: 12rpx;
+  border: 2rpx dashed rgba(76, 105, 82, 0.22);
+  border-radius: 16rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #8d654a;
+  color: #5f705f;
   font-size: 60rpx;
+  background: rgba(255, 255, 255, 0.6);
 }

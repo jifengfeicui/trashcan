@@ -1,0 +1,59 @@
+<view class="discover-page">
+  <view class="page-head">
+    <text class="page-title">发现</text>
+    <text class="page-subtitle">附近 {{radius}} 公里内 · 共 {{total}} 个点位</text>
+  </view>
+
+  <view class="filter-row">
+    <picker class="filter-chip" mode="selector" range="{{radiusOptions}}" bindchange="onRadiusChange" value="{{selectedRadiusIndex}}">
+      <view class="chip-inner">{{radiusOptions[selectedRadiusIndex]}}</view>
+    </picker>
+    <picker class="filter-chip {{selectedTagIndex > 0 ? 'active' : ''}}" mode="selector" range="{{tagOptions}}" bindchange="onTagChange" value="{{selectedTagIndex}}">
+      <view class="chip-inner">{{tagOptions[selectedTagIndex]}}</view>
+    </picker>
+  </view>
+
+  <view class="result-list" wx:if="{{trashCans.length > 0}}">
+    <block wx:for="{{trashCans}}" wx:key="id">
+      <view class="result-card">
+        <view class="result-top">
+          <view class="result-info">
+            <text class="result-title">{{item.address || '垃圾桶位置'}}</text>
+            <text class="result-meta">步行 {{item.walk_time || '—'}} · 约 {{item.distance_text || '—'}}</text>
+          </view>
+          <text class="result-tag" wx:if="{{item.tag_name}}">{{item.tag_name}}</text>
+        </view>
+
+        <text class="result-desc" wx:if="{{item.description}}">{{item.description}}</text>
+
+        <view class="preview-strip" wx:if="{{item.image_urls.length > 0}}">
+          <block wx:for="{{item.image_urls}}" wx:key="index" wx:for-item="imgUrl">
+            <image class="preview-photo" src="{{imgUrl}}" mode="aspectFill" bindtap="previewImage" data-urls="{{item.image_urls}}" data-current="{{imgUrl}}" />
+          </block>
+        </view>
+
+        <view class="card-actions">
+          <button class="btn-nav" size="mini" bindtap="navigateToItem" data-id="{{item.id}}">导航前往</button>
+          <button class="btn-ghost {{item.user_action === 1 ? 'btn-ghost-active' : ''}}" size="mini" bindtap="handleLike" data-id="{{item.id}}">👍 {{item.like_count || 0}}</button>
+          <button class="btn-danger-ghost {{item.user_action === -1 ? 'btn-danger-active' : ''}}" size="mini" bindtap="handleDislike" data-id="{{item.id}}">👎 {{item.dislike_count || 0}}</button>
+        </view>
+      </view>
+    </block>
+
+    <view class="load-more" wx:if="{{hasMore}}">
+      <text bindtap="loadMore">↑ 上滑加载更多</text>
+    </view>
+    <view class="load-more" wx:else>
+      <text class="text-muted">没有更多了</text>
+    </view>
+  </view>
+
+  <view class="empty-state" wx:elif="{{!loading && trashCans.length === 0}}">
+    <text class="empty-text">暂无结果</text>
+    <text class="empty-hint">试试扩大搜索范围或切换标签</text>
+  </view>
+
+  <view class="loading-state" wx:if="{{loading}}">
+    <text class="text-muted">加载中...</text>
+  </view>
+</view>

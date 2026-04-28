@@ -1,5 +1,5 @@
-<view class="container upload-page">
-  <view class="card nav-card">
+<view class="upload-page">
+  <view class="nav-card">
     <view class="nav-text">
       <text class="title">上传垃圾桶位置</text>
       <text class="subtitle">拾净城景 · 共护街巷</text>
@@ -7,7 +7,7 @@
     <button size="mini" class="btn-secondary" bindtap="goHome">返回首页</button>
   </view>
 
-  <view class="card form-card">
+  <view class="form-card">
     <view class="form-row">
       <text class="label">定位方式</text>
       <radio-group class="mode-group" bindchange="onModeChange">

@@ -1,124 +1,80 @@
 const { getNearbyTrashCans, toggleLike, toggleDislike, getAllTags } = require("../../utils/api/trashcan")
 const { resolveImageURL } = require("../../utils/request")
 const { isAuthenticated } = require("../../utils/auth")
+const { getAddressByLocation } = require("../../utils/geocoder")
 
 Page({
   data: {
     latitude: 39.90923,
     longitude: 116.397428,
     scale: 15,
-    radius: 1,
-    limit: 10,
+    radius: 2,
+    limit: 20,
     loading: false,
     locating: false,
-    authed: false,
-    userLocation: null,
     trashCans: [],
     markers: [],
-    version: "",
     allTags: [],
-    tagOptions: ['全部'],
-    selectedTagIndex: 0
+    selectedTagIndex: 0,
+    selectedItem: null,
+    showTip: false,
+    currentAddress: ""
   },
 
   onLoad() {
-    this.setData({ authed: isAuthenticated() })
-    this.loadVersion()
     this.loadTags()
     this.locateMe(false).catch(() => {})
   },
 
-  loadVersion() {
-    this.setData({ version: "0.0.6" })
+  onShow() {
+    if (this.data.trashCans.length > 0) {
+      // already loaded, no need to reload
+    }
   },
 
   loadTags() {
     getAllTags()
       .then((res) => {
         const tags = res.data || []
-        const tagOptions = ['全部', ...tags.map(t => t.name)]
-        this.setData({
-          allTags: tags,
-          tagOptions: tagOptions
-        })
+        this.setData({ allTags: tags })
       })
       .catch(() => {})
   },
 
-  onTagChange(e) {
-    const index = Number(e.detail.value)
-    this.setData({ selectedTagIndex: index })
-    this.searchNearby()
-  },
-
-  onShow() {
-    this.setData({ authed: isAuthenticated() })
-  },
-
-  onPullDownRefresh() {
-    if (!this.data.userLocation) {
-      this.locateMe(false)
-        .catch(() => {})
-        .finally(() => wx.stopPullDownRefresh())
-      return
-    }
-
-    this.searchNearby().finally(() => wx.stopPullDownRefresh())
-  },
-
-  handleRadiusInput(e) {
-    const value = Number(e.detail.value || 1)
-    this.setData({ radius: value > 0 ? value : 1 })
-  },
-
-  handleLimitInput(e) {
-    const value = Number(e.detail.value || 10)
-    this.setData({ limit: value > 0 ? value : 10 })
-  },
-
-  handleInput(e) {
-    const field = e.currentTarget.dataset.field
-    if (!field) {
-      return
-    }
-    this.setData({
-      [field]: e.detail.value
-    })
-  },
-
   locateMe(showToast = true) {
-    this.setData({ locating: true })
+    this.setData({ locating: true, showTip: false })
 
     return new Promise((resolve, reject) => {
       wx.getLocation({
         type: "gcj02",
         success: (res) => {
-          const userLocation = {
-            latitude: res.latitude,
-            longitude: res.longitude
-          }
+          const lat = res.latitude
+          const lng = res.longitude
 
           this.setData({
-            latitude: res.latitude,
-            longitude: res.longitude,
-            userLocation
+            latitude: lat,
+            longitude: lng
           })
 
-          if (showToast) {
-            wx.showToast({
-              title: "定位成功",
-              icon: "success"
+          // reverse geocode
+          getAddressByLocation(lng, lat)
+            .then((address) => {
+              if (address) {
+                this.setData({ currentAddress: address })
+              }
             })
+            .catch(() => {})
+
+          if (showToast) {
+            wx.showToast({ title: "定位成功", icon: "success" })
           }
 
           this.searchNearby().finally(resolve)
         },
-        fail: (err) => {
-          wx.showToast({
-            title: "定位失败，请检查权限",
-            icon: "none"
-          })
-          reject(err)
+        fail: () => {
+          wx.showToast({ title: "定位失败，请检查权限", icon: "none" })
+          this.setData({ showTip: true })
+          reject(new Error("location failed"))
         },
         complete: () => {
           this.setData({ locating: false })
@@ -128,30 +84,17 @@ Page({
   },
 
   searchNearby() {
-    const { userLocation, radius, limit, selectedTagIndex, allTags } = this.data
-
-    let tagId = ''
-    if (selectedTagIndex > 0) {
-      tagId = allTags[selectedTagIndex - 1]?.id || ''
-    }
-
-    if (!userLocation) {
-      wx.showToast({
-        title: "请先定位",
-        icon: "none"
-      })
-      return Promise.resolve()
-    }
+    const { latitude, longitude, radius, limit, selectedTagIndex, allTags } = this.data
+    if (!latitude || !longitude) return
 
     this.setData({ loading: true })
 
-    return getNearbyTrashCans(
-      userLocation.latitude,
-      userLocation.longitude,
-      radius,
-      limit,
-      tagId
-    )
+    let tagId = ""
+    if (selectedTagIndex > 0) {
+      tagId = allTags[selectedTagIndex - 1]?.id || ""
+    }
+
+    return getNearbyTrashCans(latitude, longitude, radius, limit, tagId)
       .then((res) => {
         const list = (res.data || []).map((item) => ({
           ...item,
@@ -162,8 +105,9 @@ Page({
             resolveImageURL(item.image_url),
             resolveImageURL(item.image_url_2),
             resolveImageURL(item.image_url_3)
-          ].filter(url => url),
+          ].filter((url) => url),
           distance_text: this.formatDistance(item.distance),
+          walk_time: this.formatWalkTime(item.distance),
           user_action: Number(item.user_action || 0),
           like_count: Number(item.like_count || 0),
           dislike_count: Number(item.dislike_count || 0)
@@ -171,14 +115,12 @@ Page({
 
         this.setData({
           trashCans: list,
-          markers: this.buildMarkers(list)
+          markers: this.buildMarkers(list),
+          showTip: list.length === 0
         })
       })
-      .catch((err) => {
-        wx.showToast({
-          title: err.message || "搜索失败",
-          icon: "none"
-        })
+      .catch(() => {
+        this.setData({ showTip: true })
       })
       .finally(() => {
         this.setData({ loading: false })
@@ -188,197 +130,148 @@ Page({
   buildMarkers(list) {
     return list
       .filter((item) => item.latitude && item.longitude)
-      .map((item) => {
-        const uploaderText = item.uploader_name ? `👤 ${item.uploader_name}` : ""
-        const addressText = item.address || "垃圾桶"
-        const content = uploaderText 
-          ? `${uploaderText}\n${addressText}\n${this.formatDistance(item.distance)}`
-          : `${addressText}\n${this.formatDistance(item.distance)}`
-        
-        return {
-          id: Number(item.id),
-          latitude: Number(item.latitude),
-          longitude: Number(item.longitude),
-          width: 28,
-          height: 28,
-          callout: {
-            content,
-            color: "#223126",
-            fontSize: 12,
-            borderRadius: 6,
-            padding: 6,
-            bgColor: "#ffffff",
-            display: "BYCLICK"
-          }
+      .map((item) => ({
+        id: Number(item.id),
+        latitude: Number(item.latitude),
+        longitude: Number(item.longitude),
+        width: 32,
+        height: 32,
+        iconPath: "/assets/marker.png",
+        callout: {
+          content: item.address || "垃圾桶",
+          color: "#223126",
+          fontSize: 12,
+          borderRadius: 6,
+          padding: 6,
+          bgColor: "#ffffff",
+          display: "BYCLICK"
         }
-      })
+      }))
   },
 
   formatDistance(distance) {
-    if (distance === undefined || distance === null) {
-      return "距离未知"
-    }
+    if (distance === undefined || distance === null) return "—"
+    if (distance < 1) return `${Math.round(distance * 1000)}m`
+    return `${distance.toFixed(1)}km`
+  },
 
-    return `距离 ${Number(distance).toFixed(2)} km`
+  formatWalkTime(distance) {
+    if (distance === undefined || distance === null) return "—"
+    const km = distance < 1 ? distance * 1000 / 1000 : distance
+    const minutes = Math.round(km * 12)
+    if (minutes < 1) return "1分钟"
+    return `${minutes}分钟`
   },
 
   handleMarkerTap(e) {
     const markerId = Number(e.detail.markerId)
     const item = this.data.trashCans.find((it) => Number(it.id) === markerId)
-    if (!item) {
-      return
-    }
+    if (!item) return
 
     this.setData({
+      selectedItem: item,
       latitude: Number(item.latitude),
       longitude: Number(item.longitude)
     })
-
-    this.openActionSheet(item)
   },
 
-  openActionSheet(item) {
-    const actions = ["导航到这里"]
-    if (item.image_urls && item.image_urls.length > 0) {
-      actions.push("查看图片")
-    }
-
-    actions.push(`点赞 (${item.like_count || 0})`)
-    actions.push(`点踩 (${item.dislike_count || 0})`)
-
-    wx.showActionSheet({
-      itemList: actions,
+  openLocationPicker() {
+    wx.chooseLocation({
       success: (res) => {
-        const action = actions[res.tapIndex]
-
-        if (action === "导航到这里") {
-          this.navigateToItemByData(item)
-          return
-        }
-
-        if (action === "查看图片") {
-          wx.previewImage({
-            urls: item.image_urls || [],
-            current: item.image_urls ? item.image_urls[0] : ''
-          })
-          return
-        }
-
-        if (!this.ensureAuth()) {
-          return
-        }
-
-        if (action.startsWith("点赞")) {
-          this.handleLikeByData(item)
-          return
-        }
-
-        if (action.startsWith("点踩")) {
-          this.handleDislikeByData(item)
-        }
+        if (!res.latitude || !res.longitude) return
+        const lat = res.latitude
+        const lng = res.longitude
+        this.setData({
+          latitude: lat,
+          longitude: lng,
+          currentAddress: res.address || res.name || ""
+        })
+        this.searchNearby()
       }
     })
+  },
+
+  handleRegionChange() {
+    // optionally re-search on pan/zoom
   },
 
   handleLike(e) {
-    const id = Number(e.currentTarget.dataset.id)
-    const item = this.data.trashCans.find((it) => Number(it.id) === id)
-    if (!item) {
+    if (!isAuthenticated()) {
+      this.goLogin()
       return
     }
-
-    this.handleLikeByData(item)
+    const id = Number(e.currentTarget.dataset.id)
+    const item = this.data.selectedItem
+    if (!item || Number(item.id) !== id) return
+    this.toggleLikeByItem(item)
   },
 
   handleDislike(e) {
-    const id = Number(e.currentTarget.dataset.id)
-    const item = this.data.trashCans.find((it) => Number(it.id) === id)
-    if (!item) {
+    if (!isAuthenticated()) {
+      this.goLogin()
       return
     }
-
-    this.handleDislikeByData(item)
+    const id = Number(e.currentTarget.dataset.id)
+    const item = this.data.selectedItem
+    if (!item || Number(item.id) !== id) return
+    this.toggleDislikeByItem(item)
   },
 
-  handleLikeByData(item) {
-    if (!this.ensureAuth()) {
-      return
-    }
-
+  toggleLikeByItem(item) {
+    const action = item.user_action === 1 ? 0 : 1
     toggleLike(item.id)
       .then((res) => {
-        this.patchActionResult(item.id, res.data || {})
+        this.patchSelectedItem(res.data || {})
       })
       .catch((err) => {
-        wx.showToast({
-          title: err.message || "操作失败",
-          icon: "none"
-        })
+        wx.showToast({ title: err.message || "操作失败", icon: "none" })
       })
   },
 
-  handleDislikeByData(item) {
-    if (!this.ensureAuth()) {
-      return
-    }
-
+  toggleDislikeByItem(item) {
+    const action = item.user_action === -1 ? 0 : -1
     toggleDislike(item.id)
       .then((res) => {
-        this.patchActionResult(item.id, res.data || {})
+        this.patchSelectedItem(res.data || {})
       })
       .catch((err) => {
-        wx.showToast({
-          title: err.message || "操作失败",
-          icon: "none"
-        })
+        wx.showToast({ title: err.message || "操作失败", icon: "none" })
       })
   },
 
-  patchActionResult(id, payload) {
-    const list = this.data.trashCans.map((item) => {
-      if (Number(item.id) !== Number(id)) {
-        return item
-      }
+  patchSelectedItem(payload) {
+    const item = this.data.selectedItem
+    if (!item) return
 
-      return {
-        ...item,
-        distance_text: this.formatDistance(item.distance),
-        like_count: Number(payload.like_count || 0),
-        dislike_count: Number(payload.dislike_count || 0),
-        user_action: Number(payload.user_action || 0)
-      }
-    })
+    const updated = {
+      ...item,
+      like_count: Number(payload.like_count ?? item.like_count),
+      dislike_count: Number(payload.dislike_count ?? item.dislike_count),
+      user_action: Number(payload.user_action ?? item.user_action)
+    }
+
+    // also update in trashCans list
+    const trashCans = this.data.trashCans.map((t) =>
+      Number(t.id) === Number(item.id) ? updated : t
+    )
 
     this.setData({
-      trashCans: list,
-      markers: this.buildMarkers(list)
+      selectedItem: updated,
+      trashCans
     })
   },
 
   previewImage(e) {
-    const urls = e.currentTarget.dataset.urls
-    const current = e.currentTarget.dataset.current
-    if (!urls || urls.length === 0) {
-      return
-    }
-
-    wx.previewImage({
-      urls: urls,
-      current: current
-    })
+    const urls = e.currentTarget.dataset.urls || []
+    const current = e.currentTarget.dataset.current || ""
+    if (!urls.length) return
+    wx.previewImage({ urls, current })
   },
 
   navigateToItem(e) {
-    const id = Number(e.currentTarget.dataset.id)
-    const item = this.data.trashCans.find((it) => Number(it.id) === id)
-    if (!item) {
-      return
-    }
-
-    this.navigateToItemByData(item)
-  },
-
-  navigateToItemByData(item) {
+    const id = e.currentTarget.dataset.id
+    const item = this.data.trashCans.find((t) => Number(t.id) === Number(id))
+    if (!item) return
     wx.openLocation({
       latitude: Number(item.latitude),
       longitude: Number(item.longitude),
@@ -388,43 +281,7 @@ Page({
     })
   },
 
-  ensureAuth() {
-    if (isAuthenticated()) {
-      return true
-    }
-
-    wx.showModal({
-      title: "需要登录",
-      content: "该操作需要先登录，是否去登录？",
-      success: (res) => {
-        if (res.confirm) {
-          const redirect = encodeURIComponent("/pages/home/index")
-          wx.navigateTo({
-            url: `/pages/login/index?redirect=${redirect}`
-          })
-        }
-      }
-    })
-
-    return false
-  },
-
-  goUpload() {
-    wx.navigateTo({
-      url: "/pages/upload/index"
-    })
-  },
-
-  goProfileOrLogin() {
-    if (isAuthenticated()) {
-      wx.navigateTo({
-        url: "/pages/profile/index"
-      })
-      return
-    }
-
-    wx.navigateTo({
-      url: "/pages/login/index?redirect=%2Fpages%2Fprofile%2Findex"
-    })
+  goLogin() {
+    wx.navigateTo({ url: "/pages/login/index" })
   }
 })

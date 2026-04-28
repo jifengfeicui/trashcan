@@ -1,6 +1,7 @@
 {
   "pages": [
     "pages/home/index",
+    "pages/discover/index",
     "pages/upload/index",
     "pages/profile/index",
     "pages/login/index",
@@ -8,10 +9,10 @@
   ],
   "window": {
     "navigationBarTitleText": "垃圾桶定位",
-    "navigationBarBackgroundColor": "#2F6A4F",
+    "navigationBarBackgroundColor": "#2e6b4c",
     "navigationBarTextStyle": "white",
-    "backgroundColor": "#F4F7F5",
-    "backgroundTextStyle": "light"
+    "backgroundColor": "#edf2eb",
+    "backgroundTextStyle": "dark"
   },
   "style": "v2",
   "sitemapLocation": "sitemap.json",
@@ -23,5 +24,38 @@
   "requiredPrivateInfos": [
     "getLocation",
     "chooseLocation"
-  ]
+  ],
+  "tabBar": {
+    "custom": false,
+    "color": "#5f705f",
+    "selectedColor": "#2e6b4c",
+    "backgroundColor": "#F4F7F2",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/home/index",
+        "text": "地图",
+        "iconPath": "assets/tab-map.png",
+        "selectedIconPath": "assets/tab-map-active.png"
+      },
+      {
+        "pagePath": "pages/discover/index",
+        "text": "发现",
+        "iconPath": "assets/tab-discover.png",
+        "selectedIconPath": "assets/tab-discover-active.png"
+      },
+      {
+        "pagePath": "pages/upload/index",
+        "text": "上传",
+        "iconPath": "assets/tab-upload.png",
+        "selectedIconPath": "assets/tab-upload-active.png"
+      },
+      {
+        "pagePath": "pages/profile/index",
+        "text": "我的",
+        "iconPath": "assets/tab-profile.png",
+        "selectedIconPath": "assets/tab-profile-active.png"
+      }
+    ]
+  }
 }

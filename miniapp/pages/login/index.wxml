@@ -1,5 +1,5 @@
-<view class="container login-page">
-  <view class="card login-card">
+<view class="login-page">
+  <view class="login-card">
     <view class="header-row">
       <view class="header-text">
         <text class="title">垃圾桶定位系统</text>

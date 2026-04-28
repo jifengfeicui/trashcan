@@ -1,4 +1,4 @@
-<view class="container profile-page">
+<view class="profile-page">
   <view class="card nav-card">
     <text class="title">用户中心</text>
     <view class="nav-actions">
