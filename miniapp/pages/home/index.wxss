@@ -17,10 +17,13 @@
   gap: 12rpx;
   padding: 16rpx 24rpx;
   padding-top: calc(env(safe-area-inset-top) + 16rpx);
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 .search-box {
   flex: 1;
+  min-width: 0;
   height: 80rpx;
   border-radius: 999rpx;
   background: rgba(255, 252, 246, 0.92);
@@ -173,6 +176,10 @@
   font-size: 28rpx;
   font-weight: 600;
   border: none;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-nav {
