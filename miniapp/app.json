@@ -5,7 +5,8 @@
     "pages/upload/index",
     "pages/profile/index",
     "pages/login/index",
-    "pages/admin/index"
+    "pages/admin/index",
+    "pages/my-uploads/index"
   ],
   "window": {
     "navigationBarTitleText": "垃圾桶定位",
