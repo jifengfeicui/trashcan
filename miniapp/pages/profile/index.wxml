@@ -93,6 +93,17 @@
         还没有上传记录，去上传一个吧。
       </view>
 
+      <!-- 三格预览网格 -->
+      <view class="preview-grid" wx:if="{{trashCans.length > 0}}">
+        <block wx:for="{{trashCans}}" wx:key="id" wx:if="{{index < 3}}">
+          <view class="preview-cell">
+            <image wx:if="{{item.image_urls.length > 0}}" class="preview-cell-img" src="{{item.image_urls[0]}}" mode="aspectFill"/>
+            <view wx:else class="preview-cell-placeholder"/>
+            <text class="preview-cell-label">{{item.address || '未填写地址'}}</text>
+          </view>
+        </block>
+      </view>
+
       <block wx:for="{{trashCans}}" wx:key="id">
         <!-- 查看态 -->
         <view class="trash-item" wx:if="{{editingItem !== item.id}}">
