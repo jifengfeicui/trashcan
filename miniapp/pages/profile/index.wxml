@@ -28,7 +28,7 @@
         </view>
         <view class="stat-divider"/>
         <view class="stat">
-          <text class="stat-n">—</text>
+          <text class="stat-n">{{userInfo.likes_received || 0}}</text>
           <text class="stat-l">获赞</text>
         </view>
       </view>

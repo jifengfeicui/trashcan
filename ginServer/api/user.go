@@ -149,13 +149,20 @@ func GetCurrentUser(c *gin.Context) {
 		return
 	}
 
+	var likesReceived int64
+	global.DB.Model(&model.TrashCanLike{}).
+		Joins("JOIN trash_cans ON trash_cans.id = trash_can_likes.trash_can_id").
+		Where("trash_cans.user_id = ? AND trash_can_likes.type = 1", userID).
+		Count(&likesReceived)
+
 	result := map[string]interface{}{
-		"id":         user.ID,
-		"username":   user.Username,
-		"nickname":   user.Nickname,
-		"avatar":     user.Avatar,
-		"is_admin":   user.IsAdmin,
-		"created_at": user.CreatedAt,
+		"id":             user.ID,
+		"username":       user.Username,
+		"nickname":       user.Nickname,
+		"avatar":         user.Avatar,
+		"is_admin":       user.IsAdmin,
+		"created_at":     user.CreatedAt,
+		"likes_received": likesReceived,
 	}
 
 	common.OkWithData(result, c)
