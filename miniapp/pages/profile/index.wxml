@@ -96,14 +96,10 @@
       <block wx:for="{{trashCans}}" wx:key="id">
         <!-- 查看态 -->
         <view class="trash-item" wx:if="{{editingItem !== item.id}}">
-          <swiper wx:if="{{item.image_urls.length > 0}}" class="item-swiper" indicator-dots="{{item.image_urls.length > 1}}" circular>
-            <swiper-item wx:for="{{item.image_urls}}" wx:key="index" wx:for-item="imgUrl">
-              <image class="item-img" src="{{imgUrl}}" mode="aspectFill"/>
-            </swiper-item>
-          </swiper>
+          <image wx:if="{{item.image_urls.length > 0}}" class="item-thumb" src="{{item.image_urls[0]}}" mode="aspectFill"/>
+          <view wx:else class="item-thumb-placeholder"/>
           <view class="item-body">
             <text class="item-address">{{item.address || '未填写地址'}}</text>
-            <text class="item-desc" wx:if="{{item.description}}">{{item.description}}</text>
             <text class="item-meta">{{item.created_at}}</text>
           </view>
           <view class="item-actions">
