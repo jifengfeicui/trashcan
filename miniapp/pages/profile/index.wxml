@@ -41,9 +41,7 @@
         <text class="form-label">头像</text>
         <view class="avatar-edit" bindtap="chooseAvatar">
           <image wx:if="{{editForm.avatar}}" class="avatar-img-sm" src="{{editForm.avatar}}" mode="aspectFill"/>
-          <view wx:else class="avatar-add">
-            <text>+</text>
-          </view>
+          <view wx:else class="avatar-add"><text>+</text></view>
         </view>
       </view>
       <view class="form-row">
@@ -56,7 +54,7 @@
       </view>
     </view>
 
-    <!-- 功能列表 -->
+    <!-- 功能菜单 -->
     <view class="menu-card">
       <view class="menu-item" bindtap="startEdit">
         <view class="menu-icon-wrap">
@@ -69,6 +67,17 @@
         <text class="menu-arrow">›</text>
       </view>
       <view class="menu-divider"/>
+      <view class="menu-item" bindtap="goMyUploads">
+        <view class="menu-icon-wrap">
+          <text class="menu-icon">🗑️</text>
+        </view>
+        <view class="menu-body">
+          <text class="menu-label">我的上传</text>
+          <text class="menu-sub">{{total}} 个点位</text>
+        </view>
+        <text class="menu-arrow">›</text>
+      </view>
+      <view class="menu-divider" wx:if="{{userInfo.is_admin}}"/>
       <view class="menu-item" wx:if="{{userInfo.is_admin}}" bindtap="goAdmin">
         <view class="menu-icon-wrap admin">
           <text class="menu-icon">⚙️</text>
@@ -81,80 +90,20 @@
       </view>
     </view>
 
-    <!-- 我的上传 -->
-    <view class="card uploads-card">
-      <view class="card-header">
-        <text class="card-title">我的上传</text>
-        <text class="card-count">{{total}} 个</text>
-        <text class="loading-hint" wx:if="{{loadingList}}">加载中…</text>
-      </view>
-
-      <view wx:if="{{!loadingList && trashCans.length === 0}}" class="empty-hint">
-        还没有上传记录，去上传一个吧。
-      </view>
-
-      <!-- 三格预览网格 -->
-      <view class="preview-grid" wx:if="{{trashCans.length > 0}}">
-        <block wx:for="{{trashCans}}" wx:key="id" wx:if="{{index < 3}}">
-          <view class="preview-cell">
-            <image wx:if="{{item.image_urls.length > 0}}" class="preview-cell-img" src="{{item.image_urls[0]}}" mode="aspectFill"/>
-            <view wx:else class="preview-cell-placeholder"/>
-            <text class="preview-cell-label">{{item.address || '未填写地址'}}</text>
-          </view>
-        </block>
-      </view>
-
-      <block wx:for="{{trashCans}}" wx:key="id">
-        <!-- 查看态 -->
-        <view class="trash-item" wx:if="{{editingItem !== item.id}}">
-          <image wx:if="{{item.image_urls.length > 0}}" class="item-thumb" src="{{item.image_urls[0]}}" mode="aspectFill"/>
-          <view wx:else class="item-thumb-placeholder"/>
-          <view class="item-body">
-            <text class="item-address">{{item.address || '未填写地址'}}</text>
-            <text class="item-meta">{{item.created_at}}</text>
-          </view>
-          <view class="item-actions">
-            <button size="mini" class="btn-secondary" bindtap="startEditItem" data-id="{{item.id}}">编辑</button>
-            <button size="mini" class="btn-danger" bindtap="handleDelete" data-id="{{item.id}}">删除</button>
-          </view>
-        </view>
-
-        <!-- 编辑态 -->
-        <view class="trash-item edit-item" wx:if="{{editingItem === item.id}}">
-          <view class="form-row">
-            <text class="form-label">图片（最多3张）</text>
-            <view class="images-grid">
-              <block wx:for="{{editItemImages}}" wx:key="index">
-                <view class="img-thumb">
-                  <image class="thumb-img" src="{{item}}" mode="aspectFill"/>
-                  <view class="thumb-remove" bindtap="removeEditImage" data-index="{{index}}">×</view>
-                </view>
-              </block>
-              <view class="img-add" bindtap="chooseEditImage" wx:if="{{editItemImages.length < 3}}">
-                <text>+</text>
-              </view>
+    <!-- 最近上传横向滑动 -->
+    <view class="recent-section" wx:if="{{trashCans.length > 0}}">
+      <text class="recent-title">最近上传</text>
+      <scroll-view class="recent-scroll" scroll-x enhanced show-scrollbar="{{false}}">
+        <view class="recent-row">
+          <block wx:for="{{trashCans}}" wx:key="id">
+            <view class="recent-cell">
+              <image wx:if="{{item.image_urls.length > 0}}" class="recent-img" src="{{item.image_urls[0]}}" mode="aspectFill"/>
+              <view wx:else class="recent-placeholder"/>
+              <text class="recent-label">{{item.address || '未填写地址'}}</text>
             </view>
-          </view>
-          <view class="form-row">
-            <text class="form-label">地址</text>
-            <input class="input" value="{{editItemForm.address}}" data-field="address" bindinput="handleItemInput" placeholder="地址"/>
-          </view>
-          <view class="form-row">
-            <text class="form-label">描述</text>
-            <textarea class="input textarea" value="{{editItemForm.description}}" data-field="description" bindinput="handleItemInput" placeholder="描述"/>
-          </view>
-          <view class="edit-actions">
-            <button size="mini" class="btn-secondary" bindtap="cancelEditItem">取消</button>
-            <button size="mini" class="btn-primary" bindtap="saveEditItem" loading="{{loadingList}}">保存</button>
-          </view>
+          </block>
         </view>
-      </block>
-
-      <view class="pager" wx:if="{{totalPages > 1}}">
-        <button size="mini" class="btn-secondary" bindtap="loadPrev" disabled="{{page <= 1}}">上一页</button>
-        <text class="page-info">{{page}} / {{totalPages}}</text>
-        <button size="mini" class="btn-secondary" bindtap="loadNext" disabled="{{page >= totalPages}}">下一页</button>
-      </view>
+      </scroll-view>
     </view>
 
     <!-- 退出登录 -->
