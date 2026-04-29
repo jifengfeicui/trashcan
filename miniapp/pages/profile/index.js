@@ -190,6 +190,12 @@ Page({
     })
   },
 
+  goMyUploads() {
+    wx.navigateTo({
+      url: "/pages/my-uploads/index"
+    })
+  },
+
   startEdit() {
     const { userInfo } = this.data
     this.setData({
