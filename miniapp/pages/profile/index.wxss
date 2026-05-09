@@ -85,8 +85,29 @@
 .card-count { font-size: 24rpx; color: #5f705f; flex: 1; }
 .loading-hint { font-size: 24rpx; color: #8a9e8a; }
 
-/* ── 编辑表单 ── */
-.edit-card { margin-bottom: 16rpx; }
+/* ── 编辑弹窗 ── */
+.modal-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 100;
+  display: flex;
+  align-items: flex-end;
+}
+.modal-sheet {
+  width: 100%;
+  background: #fff;
+  border-radius: 28rpx 28rpx 0 0;
+  padding: 16rpx 32rpx 60rpx;
+}
+.modal-handle {
+  width: 64rpx;
+  height: 8rpx;
+  border-radius: 4rpx;
+  background: rgba(0, 0, 0, 0.12);
+  margin: 0 auto 28rpx;
+}
+.modal-title { display: block; font-size: 32rpx; font-weight: 700; color: #203124; margin-bottom: 28rpx; }
 .form-row { margin-bottom: 20rpx; }
 .form-label { display: block; font-size: 24rpx; color: #5f705f; font-weight: 600; margin-bottom: 10rpx; }
 .input {
@@ -100,8 +121,7 @@
   box-sizing: border-box;
   min-height: 80rpx;
 }
-.textarea { min-height: 120rpx; }
-.edit-actions { display: flex; gap: 16rpx; margin-top: 8rpx; }
+.edit-actions { display: flex; gap: 16rpx; margin-top: 24rpx; }
 .avatar-edit { display: inline-block; }
 .avatar-img-sm { width: 100rpx; height: 100rpx; border-radius: 50%; }
 .avatar-add {

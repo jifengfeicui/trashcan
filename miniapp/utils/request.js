@@ -41,6 +41,7 @@ function request(options) {
       success: (res) => {
         if (res.statusCode === 401) {
           clearAuth()
+          wx.navigateTo({ url: '/pages/login/index' })
           reject(new Error("未登录或登录已过期"))
           return
         }
@@ -80,6 +81,7 @@ function uploadFile(options) {
       success: (res) => {
         if (res.statusCode === 401) {
           clearAuth()
+          wx.navigateTo({ url: '/pages/login/index' })
           reject(new Error("未登录或登录已过期"))
           return
         }

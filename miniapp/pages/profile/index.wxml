@@ -14,12 +14,12 @@
   <block wx:if="{{authed}}">
 
     <!-- Hero -->
-    <view class="hero" bindtap="startEdit">
-      <view class="hero-avatar">
+    <view class="hero">
+      <view class="hero-avatar" bindtap="startEdit">
         <image wx:if="{{userInfo.avatar}}" class="avatar-img" src="{{userInfo.avatar}}" mode="aspectFill"/>
         <text wx:else class="avatar-initial">{{userInfo.username[0]}}</text>
       </view>
-      <text class="hero-name">{{userInfo.nickname || userInfo.username}}</text>
+      <text class="hero-name" bindtap="startEdit">{{userInfo.nickname || userInfo.username}}</text>
       <text class="hero-username">@{{userInfo.username}}</text>
       <view class="hero-stats">
         <view class="stat">
@@ -34,23 +34,26 @@
       </view>
     </view>
 
-    <!-- 编辑资料表单 -->
-    <view class="card edit-card" wx:if="{{editing}}">
-      <text class="card-title">编辑资料</text>
-      <view class="form-row">
-        <text class="form-label">头像</text>
-        <view class="avatar-edit" bindtap="chooseAvatar">
-          <image wx:if="{{editForm.avatar}}" class="avatar-img-sm" src="{{editForm.avatar}}" mode="aspectFill"/>
-          <view wx:else class="avatar-add"><text>+</text></view>
+    <!-- 编辑资料弹窗 -->
+    <view class="modal-mask" wx:if="{{editing}}" bindtap="cancelEdit">
+      <view class="modal-sheet" catchtap="">
+        <view class="modal-handle"/>
+        <text class="modal-title">编辑资料</text>
+        <view class="form-row">
+          <text class="form-label">头像</text>
+          <view class="avatar-edit" bindtap="chooseAvatar">
+            <image wx:if="{{editForm.avatar}}" class="avatar-img-sm" src="{{editForm.avatar}}" mode="aspectFill"/>
+            <view wx:else class="avatar-add"><text>+</text></view>
+          </view>
         </view>
-      </view>
-      <view class="form-row">
-        <text class="form-label">昵称</text>
-        <input class="input" value="{{editForm.nickname}}" data-field="nickname" bindinput="handleInput" placeholder="请输入昵称"/>
-      </view>
-      <view class="edit-actions">
-        <button size="mini" class="btn-secondary" bindtap="cancelEdit">取消</button>
-        <button size="mini" class="btn-primary" bindtap="saveProfile" loading="{{loadingUser}}">保存</button>
+        <view class="form-row">
+          <text class="form-label">昵称</text>
+          <input class="input" value="{{editForm.nickname}}" data-field="nickname" bindinput="handleInput" placeholder="请输入昵称"/>
+        </view>
+        <view class="edit-actions">
+          <button size="mini" class="btn-secondary" bindtap="cancelEdit">取消</button>
+          <button size="mini" class="btn-primary" bindtap="saveProfile" loading="{{loadingUser}}">保存</button>
+        </view>
       </view>
     </view>
 
