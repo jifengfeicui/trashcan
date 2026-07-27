@@ -8,8 +8,8 @@ import (
 	"github.com/tidwall/gjson"
 	"golang.org/x/net/context"
 
-	"template/ginServer/api/common"
-	"template/global"
+	"trashcan/ginServer/api/common"
+	"trashcan/global"
 )
 
 const (

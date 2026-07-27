@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p \"D:/records/笔记/日志/每日\")",
+      "Bash(touch \"D:/records/笔记/日志/每日/2026-04-29.md\")"
+    ]
+  }
+}

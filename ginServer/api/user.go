@@ -10,10 +10,10 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 
-	"template/ginServer/api/common"
-	"template/ginServer/model"
-	"template/global"
-	"template/utils"
+	"trashcan/ginServer/api/common"
+	"trashcan/ginServer/model"
+	"trashcan/global"
+	"trashcan/utils"
 )
 
 // RegisterRequest 注册请求

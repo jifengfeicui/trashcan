@@ -3,7 +3,7 @@ package ws
 import (
 	"github.com/gin-gonic/gin"
 
-	"template/utils"
+	"trashcan/utils"
 )
 
 func RegisterGin(rg *gin.RouterGroup) {

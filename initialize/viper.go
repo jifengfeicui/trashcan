@@ -3,7 +3,7 @@ package initialize
 import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
-	"template/global"
+	"trashcan/global"
 )
 
 func Viper() {

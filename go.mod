@@ -1,4 +1,4 @@
-module template
+module trashcan
 
 go 1.24.0
 

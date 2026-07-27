@@ -7,8 +7,8 @@ import (
 
 	"gorm.io/gorm"
 
-	"template/ginServer/model"
-	"template/global"
+	"trashcan/ginServer/model"
+	"trashcan/global"
 )
 
 func RegisterTables() {

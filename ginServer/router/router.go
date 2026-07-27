@@ -5,9 +5,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"template/ginServer/api"
-	"template/ginServer/middle"
-	"template/global"
+	"trashcan/ginServer/api"
+	"trashcan/ginServer/middle"
+	"trashcan/global"
 )
 
 func InitRouter() {

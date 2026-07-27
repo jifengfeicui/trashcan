@@ -4,8 +4,8 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"template/ginServer/api/common"
-	"template/utils"
+	"trashcan/ginServer/api/common"
+	"trashcan/utils"
 )
 
 // JWTAuth JWT认证中间件

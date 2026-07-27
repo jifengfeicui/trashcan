@@ -3,7 +3,7 @@ package api
 import (
 	"github.com/gin-gonic/gin"
 
-	"template/ginServer/api/common"
+	"trashcan/ginServer/api/common"
 )
 
 func Test(c *gin.Context) {

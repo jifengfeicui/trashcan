@@ -1,9 +1,9 @@
 package main
 
 import (
-	"template/ginServer"
-	"template/global"
-	"template/initialize"
+	"trashcan/ginServer"
+	"trashcan/global"
+	"trashcan/initialize"
 )
 
 func main() {

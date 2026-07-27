@@ -4,7 +4,7 @@ import (
 	"192.168.3.23/resourcelibrary/frp_library/client"
 	"github.com/gin-gonic/gin"
 
-	"template/global"
+	"trashcan/global"
 )
 
 func AddFrpRoute(rg *gin.RouterGroup) {

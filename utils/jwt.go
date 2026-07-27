@@ -6,7 +6,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 
-	"template/global"
+	"trashcan/global"
 )
 
 var (

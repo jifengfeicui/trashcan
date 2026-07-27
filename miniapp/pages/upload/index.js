@@ -1,4 +1,4 @@
-const { createTrashCan, createTrashCanWithImages, getAllTags, createAdminTag } = require("../../utils/api/trashcan")
+const { createTrashCan, createTrashCanWithImages, getNearbyTrashCans, getAllTags, createAdminTag } = require("../../utils/api/trashcan")
 const { getAddressByLocation } = require("../../utils/geocoder")
 const { isAuthenticated } = require("../../utils/auth")
 
@@ -219,7 +219,11 @@ Page({
     this.setData({ imagePaths })
   },
 
-  submit() {
+  async submit() {
+    if (this.data.submitting) {
+      return
+    }
+
     const that = this
     const token = wx.getStorageSync('token')
     console.log('token:', token)
@@ -265,50 +269,61 @@ Page({
 
     this.setData({ submitting: true })
 
-    console.log('going to upload, imagePaths.length:', imagePaths.length)
+    try {
+      let nearbyResponse
+      try {
+        nearbyResponse = await getNearbyTrashCans(latitude, longitude, 0.01, 1)
+      } catch (err) {
+        wx.showToast({
+          title: "重复检测失败，请重试",
+          icon: "none"
+        })
+        return
+      }
 
-    if (imagePaths.length > 0) {
-      createTrashCanWithImages(payload, imagePaths)
-        .then(() => {
-          wx.showToast({
-            title: "上传成功",
-            icon: "success"
-          })
-          this.resetForm()
-          setTimeout(() => {
-            wx.switchTab({ url: "/pages/home/index" })
-          }, 1000)
-        })
-        .catch((err) => {
-          wx.showToast({
-            title: err.message || "上传失败",
-            icon: "none"
+      const nearbyTrashCan = (nearbyResponse.data || [])[0]
+      if (nearbyTrashCan) {
+        const distance = Math.round(Number(nearbyTrashCan.distance || 0) * 1000)
+        const address = nearbyTrashCan.address ? `\n位置：${nearbyTrashCan.address}` : ""
+        const shouldContinue = await new Promise((resolve) => {
+          wx.showModal({
+            title: "发现附近垃圾桶",
+            content: `10米内已有垃圾桶，距离约${distance}米。可能是同一个垃圾桶。${address}`,
+            cancelText: "取消上传",
+            confirmText: "继续上传",
+            success: (res) => resolve(res.confirm),
+            fail: () => resolve(false)
           })
         })
-        .finally(() => {
-          this.setData({ submitting: false })
-        })
-    } else {
-      createTrashCan(payload)
-        .then(() => {
-          wx.showToast({
-            title: "上传成功",
-            icon: "success"
-          })
-          this.resetForm()
-          setTimeout(() => {
-            wx.switchTab({ url: "/pages/home/index" })
-          }, 1000)
-        })
-        .catch((err) => {
-          wx.showToast({
-            title: err.message || "上传失败",
-            icon: "none"
-          })
-        })
-        .finally(() => {
-          this.setData({ submitting: false })
-        })
+
+        if (!shouldContinue) {
+          return
+        }
+      }
+
+      console.log('going to upload, imagePaths.length:', imagePaths.length)
+
+      if (imagePaths.length > 0) {
+        await createTrashCanWithImages(payload, imagePaths)
+      } else {
+        await createTrashCan(payload)
+      }
+
+      wx.showToast({
+        title: "上传成功",
+        icon: "success"
+      })
+      this.resetForm()
+      setTimeout(() => {
+        wx.switchTab({ url: "/pages/home/index" })
+      }, 1000)
+    } catch (err) {
+      wx.showToast({
+        title: err.message || "上传失败",
+        icon: "none"
+      })
+    } finally {
+      this.setData({ submitting: false })
     }
   },
 

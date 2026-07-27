@@ -1,8 +1,8 @@
 package initialize
 
 import (
-	"template/global"
-	Orm "template/initialize/orm"
+	"trashcan/global"
+	Orm "trashcan/initialize/orm"
 )
 
 func Initialize() {

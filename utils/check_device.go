@@ -7,7 +7,7 @@ import (
 	"192.168.3.23/resourcelibrary/lsblkjson_parse/model"
 	"golang.org/x/net/context"
 
-	"template/global"
+	"trashcan/global"
 )
 
 // ReadStorageDevicesCtx 监听信号以中止检测USB设备

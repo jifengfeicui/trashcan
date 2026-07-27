@@ -8,10 +8,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"template/ginServer/api/common"
-	"template/ginServer/model"
-	"template/global"
-	"template/utils"
+	"trashcan/ginServer/api/common"
+	"trashcan/ginServer/model"
+	"trashcan/global"
+	"trashcan/utils"
 )
 
 // GetNearbyTrashCans 获取附近的垃圾桶

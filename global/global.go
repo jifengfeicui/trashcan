@@ -4,7 +4,7 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
-	"template/config"
+	"trashcan/config"
 )
 
 var (

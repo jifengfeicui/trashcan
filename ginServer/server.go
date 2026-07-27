@@ -1,7 +1,7 @@
 package ginServer
 
 import (
-	"template/ginServer/router"
+	"trashcan/ginServer/router"
 )
 
 func Server() {

@@ -5,9 +5,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"template/ginServer/api/common"
-	"template/ginServer/model"
-	"template/global"
+	"trashcan/ginServer/api/common"
+	"trashcan/ginServer/model"
+	"trashcan/global"
 )
 
 // ToggleLike 点赞
@@ -106,4 +106,3 @@ func toggleLikeOrDislike(c *gin.Context, likeType int8) {
 
 	common.OkWithData(result, c)
 }
-

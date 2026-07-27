@@ -1,3 +1,5 @@
+//go:build ignore
+
 package main
 
 import (
@@ -6,8 +8,8 @@ import (
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	"template/ginServer/model"
-	"template/utils"
+	"trashcan/ginServer/model"
+	"trashcan/utils"
 )
 
 func main() {

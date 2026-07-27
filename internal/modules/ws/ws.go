@@ -7,8 +7,8 @@ import (
 	"192.168.3.23/resourcelibrary/lsblkjson_parse/model"
 	"github.com/lxzan/gws"
 
-	"template/ginServer/api/common"
-	"template/utils"
+	"trashcan/ginServer/api/common"
+	"trashcan/utils"
 )
 
 // global/websocket.go
